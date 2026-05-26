@@ -1,11 +1,9 @@
 package com.zaryx.framework.bukkit.menu.extra;
 
-import lombok.Getter;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.ClickType;
 
-@Getter
-public class MenuClick {
+public final class MenuClick {
     private final Player player;
     private final ClickType clickType;
 

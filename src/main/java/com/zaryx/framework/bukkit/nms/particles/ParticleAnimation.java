@@ -50,15 +50,13 @@ public class ParticleAnimation {
 
     private void scheduleFrame(Location baseLocation, ParticleKeyframe frame) {
         org.bukkit.Bukkit.getScheduler().runTaskLater(
-            com.zaryx.framework.bukkit.FrameworkPlugin.getInstance(),
-            () -> {
+            com.zaryx.framework.bukkit.FrameworkPlugin.getInstance(), () -> {
                 Location loc = baseLocation.clone();
                 if (frame.offset != null) {
                     loc.add(frame.offset);
                 }
                 frame.effect.display(loc);
-            },
-            frame.tick
+            }, frame.tick
         );
     }
 
@@ -126,11 +124,7 @@ public class ParticleAnimation {
             double y = height * Math.sin(progress * Math.PI);
             double spread = progress * 2;
 
-            animation.addKeyframe(i, particle, 
-                new org.bukkit.Location(null, 
-                    (Math.random() - 0.5) * spread, 
-                    y, 
-                    (Math.random() - 0.5) * spread
+            animation.addKeyframe(i, particle, new org.bukkit.Location(null, (Math.random() - 0.5) * spread, y, (Math.random() - 0.5) * spread
                 )
             );
         }

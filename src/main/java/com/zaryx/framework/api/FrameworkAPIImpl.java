@@ -28,7 +28,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
     private final Map<String, Object> components;
     private final Map<String, Registry<?>> registries;
     private ExecutorService executorService;
-    
+
     private volatile State state;
     private long startTime;
     private long initStartTime;
@@ -59,7 +59,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
         this.moduleManager = new ModuleManager(logger);
         this.state = State.CREATED;
         this.stats = new FrameworkStats();
-        
+
         logger.info("FrameworkAPI created for: " + ownerName);
         if (config.isDebugMode()) {
             logger.info("Debug mode enabled: " + config);
@@ -97,9 +97,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
             }
             if (webRequests == null) {
                 webRequests = new WebRequestService(
-                        config.getConnectTimeoutMs(),
-                        config.getRequestTimeoutMs(),
-                        getExecutorService()
+                        config.getConnectTimeoutMs(), config.getRequestTimeoutMs(), getExecutorService()
                 );
             }
             if (nms == null) {
@@ -127,7 +125,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
             state = State.INITIALIZED;
             long initTime = System.currentTimeMillis() - initStartTime;
             stats.setUptime(initTime);
-            
+
             logger.info("✓ ZarFramework initialized in " + initTime + "ms");
             return true;
 
@@ -405,9 +403,8 @@ public class FrameworkAPIImpl implements FrameworkAPI {
     public boolean registerModulesFromPackage(String packageName, java.util.function.Predicate<Module> filter) {
         try {
             logger.info("Auto-discovering modules in package: " + packageName);
-            
-            // This is a simplified implementation - in a real framework,
-            // you would use reflection to scan the package for Module implementations
+
+            // This is a simplified implementation - in a real framework, // you would use reflection to scan the package for Module implementations
             // For now, we'll just log the intent and return true
             logger.info("Module auto-discovery for " + packageName + " (simplified implementation)");
             return true;
@@ -474,7 +471,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
         info.setInitializationTime(System.currentTimeMillis() - initStartTime);
         info.setState(state.toString());
         info.setComponents(new HashMap<>(components));
-        
+
         if (moduleManager != null) {
             Map<String, String> moduleStatus = new HashMap<>();
             for (Module module : moduleManager.getAll()) {
@@ -482,7 +479,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
             }
             info.setModuleStatus(moduleStatus);
         }
-        
+
         return info;
     }
 
@@ -552,7 +549,7 @@ public class FrameworkAPIImpl implements FrameworkAPI {
 
     private void updateStats() {
         stats.setUptime(System.currentTimeMillis() - startTime);
-        
+
         if (moduleManager != null) {
             stats.setModuleCount(moduleManager.size());
             stats.setEnabledModuleCount((int) moduleManager.getAll().stream()

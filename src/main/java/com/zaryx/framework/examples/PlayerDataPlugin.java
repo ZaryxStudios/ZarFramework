@@ -73,7 +73,7 @@ public class PlayerDataPlugin extends JavaPlugin implements Listener {
 
         // Try loading from cache
         PlayerData data = cache.get("player_" + uuid, PlayerData.class);
-        
+
         if (data == null) {
             // Create a new entry
             data = new PlayerData(uuid, player.getName());
@@ -91,7 +91,7 @@ public class PlayerDataPlugin extends JavaPlugin implements Listener {
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
-        
+
         PlayerData data = playerDataMap.get(uuid);
         if (data != null) {
             cache.put("player_" + uuid, data);

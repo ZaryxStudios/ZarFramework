@@ -29,7 +29,7 @@ public abstract class BaseCommand extends Command {
 
     private final List<BaseCommand> subCommands;
     private final List<CommandArgument<?>> commandArguments;
-    
+
     public boolean isEnabled() {
         return this.enabled;
     }
@@ -37,7 +37,7 @@ public abstract class BaseCommand extends Command {
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
     }
-    
+
     protected BaseCommand() {
         super(resolveNameFromAnnotation());
         this.applyAnnotations();
@@ -61,39 +61,26 @@ public abstract class BaseCommand extends Command {
 
     @Override
     public final boolean execute(CommandSender sender, String label, String[] args) {
-        if (!this.enabled) {
-            sender.sendMessage("This command is disabled.");
+        if (!this.canExecute(sender)) {
             return true;
         }
 
-        if (this.playerOnly && !(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by a player.");
-            return true;
-        }
-
-        if (this.consoleOnly && sender instanceof Player) {
-            sender.sendMessage("This command can only be used from console.");
-            return true;
-        }
-
-        if (this.permission != null && !this.permission.isEmpty()) {
-            if (!sender.hasPermission(this.permission)) {
-                sender.sendMessage("You do not have permission to use this command.");
-                return true;
-            }
-        }
-
-        if (args != null && args.length > 0) {
-            BaseCommand subCommand = findSubCommand(args[0]);
-            if (subCommand != null) {
-                String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
-                return subCommand.execute(sender, args[0], subArgs);
-            }
+        BaseCommand subCommand = this.findSubCommandFor(args);
+        if (subCommand != null) {
+            String[] subArgs = args != null && args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new String[0];
+            return subCommand.execute(sender, args != null && args.length > 0 ? args[0] : label, subArgs);
         }
 
         try {
             CommandContext commandContext = this.buildContext(sender, args);
-            Task.sync(() -> this.execute(commandContext));
+            // Ensure command logic runs on the main server thread when required
+            Task.sync(() -> {
+                try {
+                    this.execute(commandContext);
+                } catch (Exception ex) {
+                    sender.sendMessage("An internal error occurred while executing the command.");
+                }
+            });
         } catch (IllegalArgumentException e) {
             sender.sendMessage(e.getMessage());
         }
@@ -107,35 +94,38 @@ public abstract class BaseCommand extends Command {
             return getSubCommandNames("");
         }
 
-        if (args.length == 1) {
-            BaseCommand subCommand = findSubCommand(args[0]);
-            if (subCommand != null) {
-                return subCommand.tabComplete(sender, alias, new String[0]);
-            }
-
-            return getSubCommandNames(args[0]);
-        }
-
-        BaseCommand subCommand = findSubCommand(args[0]);
+        BaseCommand subCommand = this.findSubCommandFor(args);
         if (subCommand != null) {
             String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
             return subCommand.tabComplete(sender, alias, subArgs);
         }
 
-        int index = args.length - 1;
+        if (args.length == 1) {
+            return getSubCommandNames(args[0]);
+        }
 
+        int index = args.length - 1;
         if (index < 0 || index >= this.commandArguments.size()) {
             return Collections.emptyList();
         }
 
         CommandArgument<?> commandArgument = this.commandArguments.get(index);
-        String input = args[index];
-
-        return commandArgument.tabComplete(sender, input);
+        String input = args[index] != null ? args[index] : "";
+        try {
+            return commandArgument.tabComplete(sender, input);
+        } catch (Exception e) {
+            return Collections.emptyList();
+        }
     }
 
     protected CommandContext buildContext(CommandSender sender, String[] inputArgs) {
-        if (inputArgs.length > this.commandArguments.size()) {
+        return this.createContext(sender, inputArgs);
+    }
+
+    protected CommandContext createContext(CommandSender sender, String[] inputArgs) {
+        String[] arguments = inputArgs != null ? inputArgs : new String[0];
+
+        if (arguments.length > this.commandArguments.size()) {
             throw new IllegalArgumentException("Too many arguments.");
         }
 
@@ -143,19 +133,20 @@ public abstract class BaseCommand extends Command {
         for (int i = 0; i < this.commandArguments.size(); i++) {
             CommandArgument<?> commandArgument = this.commandArguments.get(i);
 
-            if (!commandArgument.shouldParse(commandContext)) continue;
-
-            boolean hasInput = i < inputArgs.length;
-            if (!hasInput) {
-                if (!commandArgument.isRequired(commandContext)) {
-                    commandContext.put(commandArgument.getName(), commandArgument.getDefaultValue());
-                    continue;
-                }
-
-                throw new IllegalArgumentException("Missing required argument: " + commandArgument.getName());
+            if (!commandArgument.shouldParse(commandContext)) {
+                continue;
             }
 
-            String input = inputArgs[i];
+            if (i >= arguments.length) {
+                if (commandArgument.isRequired(commandContext)) {
+                    throw new IllegalArgumentException("Missing required argument: " + commandArgument.getName());
+                }
+
+                commandContext.put(commandArgument.getName(), commandArgument.getDefaultValue());
+                continue;
+            }
+
+            String input = arguments[i];
 
             if (!commandArgument.validate(input)) {
                 throw new IllegalArgumentException("Invalid argument: '" + commandArgument.getName() + "'");
@@ -165,6 +156,38 @@ public abstract class BaseCommand extends Command {
         }
 
         return commandContext;
+    }
+
+    private boolean canExecute(CommandSender sender) {
+        if (!this.enabled) {
+            sender.sendMessage("This command is disabled.");
+            return false;
+        }
+
+        if (this.playerOnly && !(sender instanceof Player)) {
+            sender.sendMessage("This command can only be used by a player.");
+            return false;
+        }
+
+        if (this.consoleOnly && sender instanceof Player) {
+            sender.sendMessage("This command can only be used from console.");
+            return false;
+        }
+
+        if (this.permission != null && !this.permission.isEmpty() && !sender.hasPermission(this.permission)) {
+            sender.sendMessage("You do not have permission to use this command.");
+            return false;
+        }
+
+        return true;
+    }
+
+    private BaseCommand findSubCommandFor(String[] args) {
+        if (args == null || args.length == 0) {
+            return null;
+        }
+
+        return findSubCommand(args[0]);
     }
 
     protected List<CommandArgument<?>> arguments() {

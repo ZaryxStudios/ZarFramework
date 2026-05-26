@@ -36,11 +36,7 @@ public interface FrameworkAPI {
      * Framework initialization state
      */
     enum State {
-        CREATED,
-        INITIALIZED,
-        RUNNING,
-        DISABLED,
-        ERROR
+        CREATED, INITIALIZED, RUNNING, DISABLED, ERROR
     }
 
     // ============ Lifecycle ============

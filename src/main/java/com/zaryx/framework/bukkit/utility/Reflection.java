@@ -12,7 +12,7 @@ public final class Reflection {
 
     private static final String NMS_VERSION;
     private static final boolean MODERN;
-    
+
     // Cache to improve reflection performance
     private static final ConcurrentHashMap<String, Class<?>> classCache = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, Method> methodCache = new ConcurrentHashMap<>();
@@ -34,7 +34,7 @@ public final class Reflection {
         if (classCache.containsKey(clazz)) {
             return true;
         }
-        
+
         try {
             Class.forName(clazz);
             // Store in cache
@@ -51,7 +51,7 @@ public final class Reflection {
             if (classCache.containsKey(name)) {
                 return classCache.get(name);
             }
-            
+
             try {
                 Class<?> clazz = Class.forName(name);
                 // Store in cache
@@ -170,8 +170,7 @@ public final class Reflection {
                 connection = get(handle, "connection");
 
                 Method send = connection.getClass().getMethod(
-                        "send",
-                        getNMS("net.minecraft.network.protocol.Packet")
+                        "send", getNMS("net.minecraft.network.protocol.Packet")
                 );
 
                 send.invoke(connection, packet);
@@ -182,8 +181,7 @@ public final class Reflection {
             connection = get(handle, "playerConnection");
 
             Method send = connection.getClass().getMethod(
-                    "sendPacket",
-                    getNMS("Packet")
+                    "sendPacket", getNMS("Packet")
             );
 
             send.invoke(connection, packet);
@@ -209,8 +207,7 @@ public final class Reflection {
 
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Reflection invoke failed: " + instance.getClass().getName() + "." + method,
-                    e
+                    "Reflection invoke failed: " + instance.getClass().getName() + "." + method, e
             );
         }
     }
@@ -233,8 +230,7 @@ public final class Reflection {
 
         } catch (Exception e) {
             throw new RuntimeException(
-                    "Reflection get failed: " + instance.getClass().getName() + "." + field,
-                    e
+                    "Reflection get failed: " + instance.getClass().getName() + "." + field, e
             );
         }
     }

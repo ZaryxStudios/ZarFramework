@@ -17,51 +17,65 @@ public class MenuHandler  implements Listener {
 
     @EventHandler
     public void onClick(InventoryClickEvent event) {
-        if (!(event.getWhoClicked() instanceof Player)) return;
-        if (!(event.getInventory().getHolder() instanceof Menu)) return;
+        Menu menu = resolveMenu(event);
+        if (menu == null) return;
 
         int slot = event.getRawSlot();
+        if (!isTopInventorySlot(event, slot)) return;
 
-        if (slot >= event.getInventory().getSize()) return;
-
-        Menu menu = (Menu) event.getInventory().getHolder();
-        MenuItem[] items = menu.getItems();
-        if (items == null) return;
-
-        MenuItem item = items[slot];
+        MenuItem item = menu.getItem(slot);
         if (item != null && item.isMovable()) return;
 
-
         event.setCancelled(true);
-        if (item != null) menu.handleClick(event);
+        if (item != null) {
+            try {
+                menu.handleClick(event);
+            } catch (Exception ignored) {}
+        }
     }
 
     @EventHandler
     public void onClose(InventoryCloseEvent event) {
-        if (!(event.getInventory().getHolder() instanceof Menu)) return;
+        Menu menu = resolveMenu(event);
+        if (menu == null) return;
 
         Player player = (Player) event.getPlayer();
-        Menu menu = (Menu) event.getInventory().getHolder();
         MenuContext context = menu.context(player);
-        boolean navigating = context.has(MenuContext.NAVIGATING);
-        boolean becameEmpty = MenuManager.getInstance().unregister(menu, player);
+        boolean navigating = context != null && context.has(MenuContext.NAVIGATING);
 
-        if (becameEmpty) {
-            menu.close(player);
-        }
+        // Run per-player close lifecycle and let MenuManager handle session cleanup
+        menu.close(player);
 
-        if(navigating) {
-            context.remove(MenuContext.NAVIGATING);
-            return;
-        }
+        if (navigating) return; // do not trigger auto-back when navigation was intentional
 
         if (menu.getPolicy() == MenuPolicy.AUTO) {
-            Task.sync(() -> menu.back(player));
+            Task.sync(() -> {
+                try {
+                    menu.back(player);
+                } catch (Exception ignored) {}
+            });
         }
     }
 
     @EventHandler
     public void onQuit(PlayerQuitEvent event) {
         MenuManager.getInstance().cleanupOfflinePlayer(event.getPlayer().getUniqueId());
+    }
+
+    private Menu resolveMenu(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return null;
+        if (event.getInventory() == null || event.getInventory().getHolder() == null) return null;
+        if (!(event.getInventory().getHolder() instanceof Menu)) return null;
+        return (Menu) event.getInventory().getHolder();
+    }
+
+    private Menu resolveMenu(InventoryCloseEvent event) {
+        if (event.getInventory() == null || event.getInventory().getHolder() == null) return null;
+        if (!(event.getInventory().getHolder() instanceof Menu)) return null;
+        return (Menu) event.getInventory().getHolder();
+    }
+
+    private boolean isTopInventorySlot(InventoryClickEvent event, int slot) {
+        return slot >= 0 && slot < event.getInventory().getSize();
     }
 }

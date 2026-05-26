@@ -23,7 +23,7 @@ public class Board {
         ScoreboardManager manager = Bukkit.getScoreboardManager();
         this.scoreboard = manager.getNewScoreboard();
 
-        this.objective = this.scoreboard.registerNewObjective("sidebar",  "dummy");
+        this.objective = this.scoreboard.registerNewObjective("sidebar", "dummy");
         this.objective.setDisplaySlot(DisplaySlot.SIDEBAR);
 
         player.setScoreboard(this.scoreboard);

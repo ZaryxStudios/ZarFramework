@@ -80,9 +80,7 @@ public final class TabPacket {
                 Object footerComp = Reflection.invokeStatic(component, "literal", f);
 
                 packet = Reflection.newInstance(
-                        NMS.resolve("net.minecraft.network.protocol.game.ClientboundTabListPacket"),
-                        headerComp,
-                        footerComp
+                        NMS.resolve("net.minecraft.network.protocol.game.ClientboundTabListPacket"), headerComp, footerComp
                 );
             } else {
                 packet = Reflection.newInstance(
@@ -139,14 +137,7 @@ public final class TabPacket {
         if (entryClass == null) throw new RuntimeException("NMS entry class not found");
 
         return Reflection.newInstance(
-            entryClass,
-            profile.getId(),
-            profile,
-            false,
-            entry.getPing(),
-            Reflection.getEnum("net.minecraft.world.level.EnumGamemode", "SURVIVAL"),
-            chat(entry.getText()),
-            null
+            entryClass, profile.getId(), profile, false, entry.getPing(), Reflection.getEnum("net.minecraft.world.level.EnumGamemode", "SURVIVAL"), chat(entry.getText()), null
         );
     }
 
@@ -172,11 +163,7 @@ public final class TabPacket {
         GameProfile profile = new GameProfile(fakeUUID(slot), " ");
 
         return Reflection.newInstance(
-                NMS.resolveLegacy("PacketPlayOutPlayerInfo$PlayerInfoData"),
-                profile,
-                0,
-                Reflection.getEnum("EnumGamemode", "SURVIVAL"),
-                chat(" ")
+                NMS.resolveLegacy("PacketPlayOutPlayerInfo$PlayerInfoData"), profile, 0, Reflection.getEnum("EnumGamemode", "SURVIVAL"), chat(" ")
         );
     }
 
@@ -190,8 +177,7 @@ public final class TabPacket {
 
         if (entry.getValue() != null && entry.getSignature() != null) {
             profile.getProperties().put(
-                    "textures",
-                    new Property("textures", entry.getValue(), entry.getSignature())
+                    "textures", new Property("textures", entry.getValue(), entry.getSignature())
             );
         }
 
@@ -213,9 +199,7 @@ public final class TabPacket {
             // ===== LEGACY (1.8–1.16) =====
             Class<?> ichat = NMS.resolveLegacy("IChatBaseComponent");
             return Reflection.invokeStatic(
-                    ichat,
-                    "a",
-                    "{\"text\":\"" + text.replace("\"", "") + "\"}"
+                    ichat, "a", "{\"text\":\"" + text.replace("\"", "") + "\"}"
             );
 
         } catch (Exception e) {

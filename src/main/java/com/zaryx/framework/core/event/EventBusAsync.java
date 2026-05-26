@@ -74,8 +74,7 @@ public class EventBusAsync {
                 try {
                     listener.onEvent(event);
                 } catch (Exception e) {
-                    logger.log(Level.WARNING, 
-                        "Error in synchronous listener: " + event.getClass().getSimpleName(), e);
+                    logger.log(Level.WARNING, "Error in synchronous listener: " + event.getClass().getSimpleName(), e);
                 }
             }
         }
@@ -105,8 +104,7 @@ public class EventBusAsync {
                     try {
                         listener.onEvent(event);
                     } catch (Exception e) {
-                        logger.log(Level.WARNING, 
-                            "Error in asynchronous listener: " + event.getClass().getSimpleName(), e);
+                        logger.log(Level.WARNING, "Error in asynchronous listener: " + event.getClass().getSimpleName(), e);
                     }
                 });
             }
@@ -140,8 +138,7 @@ public class EventBusAsync {
                     try {
                         listener.onEvent(event);
                     } catch (Exception e) {
-                        logger.log(Level.WARNING, 
-                            "Error en listener asincrónico: " + event.getClass().getSimpleName(), e);
+                        logger.log(Level.WARNING, "Error en listener asincrónico: " + event.getClass().getSimpleName(), e);
                     } finally {
                         if (completed.incrementAndGet() == totalListeners && callback != null) {
                             callback.run();
@@ -213,8 +210,8 @@ public class EventBusAsync {
 
         @Override
         public String toString() {
-            return this.getClass().getSimpleName() + 
-                   "{source='" + source + '\'' + 
+            return this.getClass().getSimpleName() +
+                   "{source='" + source + '\'' +
                    ", timestamp=" + timestamp + '}';
         }
     }

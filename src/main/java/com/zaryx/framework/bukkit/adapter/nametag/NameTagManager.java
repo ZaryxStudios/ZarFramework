@@ -59,8 +59,7 @@ public class NameTagManager {
 
             String teamName = ("nt_" + target.getName())
                     .substring(0, Math.min(16, target.getName().length() + 3));
-            NameTag team = this.teams.get(viewer).computeIfAbsent(target,
-                    p -> new NameTag(scoreboard, teamName));
+            NameTag team = this.teams.get(viewer).computeIfAbsent(target, p -> new NameTag(scoreboard, teamName));
 
             team.apply(prefix, suffix);
             team.addEntry(target.getName());

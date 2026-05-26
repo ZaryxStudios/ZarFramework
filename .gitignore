@@ -39,5 +39,7 @@ build/
 ### Mac OS ###
 .DS_Store
 
-*.md
+README.md
+README_ES.md
+docs_es/
 docs/

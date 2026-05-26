@@ -1,26 +1,27 @@
 package com.zaryx.framework.bukkit.menu.core;
 
+import com.zaryx.framework.bukkit.menu.adapter.MenuContext;
 import com.zaryx.framework.bukkit.menu.extra.MenuItem;
-import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
-@Getter @Setter
 public abstract class MenuPage extends Menu {
+
+    private static final String PAGE_KEY = "menu:page";
 
     public MenuPage(String title, int rows) {
         super(title, rows, null);
     }
 
     protected int getPage(Player player) {
-        return context(player).get("page");
+        return context(player).getOrDefault(PAGE_KEY, 0);
     }
 
     protected void setPage(Player player, int page) {
-        context(player).set("page", Math.max(0, page));
+        context(player).set(PAGE_KEY, Math.max(0, page));
         setDirty(true);
     }
 
@@ -36,18 +37,22 @@ public abstract class MenuPage extends Menu {
         if (totalContent <= 0) {
             return 1;
         }
+
         int pageSize = Math.max(1, getPageSize());
         return (totalContent + pageSize - 1) / pageSize;
     }
 
     protected int getPageSize() {
-        return (getRows() * 9) - getNavigationSlots().size();
+        return getContentSlots().size();
     }
 
     protected List<Integer> getNavigationSlots() {
         int size = getRows() * 9;
-        List<Integer> slots = new ArrayList<>();
+        if (size < 9) {
+            return Collections.emptyList();
+        }
 
+        List<Integer> slots = new ArrayList<>(2);
         slots.add(size - 9);
         slots.add(size - 1);
         return slots;
@@ -55,12 +60,16 @@ public abstract class MenuPage extends Menu {
 
     protected List<Integer> getContentSlots() {
         List<Integer> slots = new ArrayList<>();
-        int lastRow = getRows() - 1;
+        List<Integer> navigationSlots = getNavigationSlots();
+        int rows = Math.max(1, getRows());
+        int lastRow = rows - 1;
 
-        for (int i = 0; i < getRows(); i++) {
-            for (int j = 0; j < 9; j++) {
-                int slot = i * 9 + j;
-                if (i == lastRow && getNavigationSlots().contains(slot)) continue;
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < 9; col++) {
+                int slot = row * 9 + col;
+                if (row == lastRow && navigationSlots.contains(slot)) {
+                    continue;
+                }
                 slots.add(slot);
             }
         }
@@ -68,17 +77,17 @@ public abstract class MenuPage extends Menu {
     }
 
     protected void renderPage(Player player, List<MenuItem> content) {
-        int page = getPage(player);
-        int pageSize = getPageSize();
-        int start = page * pageSize;
+        if (content == null) {
+            content = Collections.emptyList();
+        }
 
+        int page = getPage(player);
+        int start = page * Math.max(1, getPageSize());
         List<Integer> slots = getContentSlots();
 
         for (int i = 0; i < slots.size(); i++) {
             int index = start + i;
-            setItem(slots.get(i),
-                    index < content.size() ? content.get(index) : null
-            );
+            setItem(slots.get(i), index < content.size() ? content.get(index) : null);
         }
 
         renderNavigation(player, content.size());
@@ -86,18 +95,16 @@ public abstract class MenuPage extends Menu {
 
     protected void renderNavigation(Player player, int total) {
         List<Integer> nav = getNavigationSlots();
+        if (nav.size() < 2) {
+            return;
+        }
 
-        setItem(nav.get(0),
-                hasPreviousPage(player) ? getPreviousButton(player) : null
-        );
-
-        setItem(nav.get(1),
-                hasNextPage(player, total) ? getNextButton(player) : null
-        );
+        setItem(nav.get(0), hasPreviousPage(player) ? getPreviousButton(player) : null);
+        setItem(nav.get(1), hasNextPage(player, total) ? getNextButton(player) : null);
     }
 
     protected void nextPage(Player player, List<MenuItem> content) {
-        if (!hasNextPage(player, content.size())) {
+        if (content == null || !hasNextPage(player, content.size())) {
             return;
         }
         setPage(player, getPage(player) + 1);
@@ -105,7 +112,7 @@ public abstract class MenuPage extends Menu {
     }
 
     protected void previousPage(Player player, List<MenuItem> content) {
-        if (!hasPreviousPage(player)) {
+        if (content == null || !hasPreviousPage(player)) {
             return;
         }
         setPage(player, getPage(player) - 1);
@@ -113,6 +120,10 @@ public abstract class MenuPage extends Menu {
     }
 
     protected void openAtPage(Player player, int page, List<MenuItem> content) {
+        if (content == null) {
+            content = Collections.emptyList();
+        }
+
         int totalPages = getTotalPages(content.size());
         int target = Math.max(0, Math.min(page, totalPages - 1));
         setPage(player, target);

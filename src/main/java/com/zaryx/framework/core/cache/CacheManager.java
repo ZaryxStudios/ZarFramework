@@ -17,7 +17,7 @@ public class CacheManager {
     private final long defaultTTL;
     private final int maxSize;
     private final boolean compressionEnabled;
-    
+
     // Metrics
     private final AtomicLong hits;
     private final AtomicLong misses;
@@ -29,7 +29,7 @@ public class CacheManager {
         this.defaultTTL = defaultTTLMillis;
         this.compressionEnabled = compressionEnabled;
         this.maxSize = maxSize;
-        
+
         this.hits = new AtomicLong(0);
         this.misses = new AtomicLong(0);
         this.puts = new AtomicLong(0);
@@ -175,14 +175,7 @@ public class CacheManager {
 
     public CacheStats getStats() {
         return new CacheStats(
-                cache.size(),
-                maxSize,
-                hits.get(),
-                misses.get(),
-                puts.get(),
-                evictions.get(),
-                defaultTTL,
-                compressionEnabled
+                cache.size(), maxSize, hits.get(), misses.get(), puts.get(), evictions.get(), defaultTTL, compressionEnabled
         );
     }
 

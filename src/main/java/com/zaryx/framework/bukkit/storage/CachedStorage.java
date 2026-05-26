@@ -11,8 +11,7 @@ import java.util.Set;
 public class CachedStorage<T> {
 
     private final StorageContext storageContext;
-    private final Map<String, T> cache = new HashMap<>();
-    private final Set<String> dirty = new HashSet<>();
+    private final Map<String, Entry<T>> cache = new HashMap<>();
     private final Class<T> type;
     private final Type genericType;
 
@@ -29,21 +28,21 @@ public class CachedStorage<T> {
     }
 
     public T get(String key) {
-        if (this.cache.containsKey(key)) {
-            return this.cache.get(key);
+        Entry<T> entry = this.cache.get(key);
+        if (entry != null) {
+            return entry.value;
         }
 
         T value = this.genericType != null ? this.storageContext.load(key, this.genericType) : this.storageContext.load(key, this.type);
         if (value != null) {
-            this.cache.put(key, value);
+            this.cache.put(key, Entry.loaded(value));
         }
 
         return value;
     }
 
     public void set(String key, T value) {
-        this.cache.put(key, value);
-        this.dirty.add(key);
+        this.cache.put(key, Entry.dirty(value));
     }
 
     public boolean isLoaded(String key) {
@@ -53,22 +52,38 @@ public class CachedStorage<T> {
     public void unload(String key) {
         this.flush(key);
         this.cache.remove(key);
-        this.dirty.remove(key);
     }
 
     public void flush(String key) {
-        if (!this.dirty.contains(key)) return;
+        Entry<T> entry = this.cache.get(key);
+        if (entry == null || !entry.dirty) return;
 
-        T value = this.cache.get(key);
-        if (value == null) return;
-
-        this.storageContext.save(key, value);
-        this.dirty.remove(key);
+        if (this.storageContext.save(key, entry.value)) {
+            entry.dirty = false;
+        }
     }
 
     public void saveAll() {
-        for (String key : new HashSet<>(this.dirty)) {
+        for (String key : new HashSet<>(this.cache.keySet())) {
             flush(key);
+        }
+    }
+
+    private static final class Entry<T> {
+        private final T value;
+        private boolean dirty;
+
+        private Entry(T value, boolean dirty) {
+            this.value = value;
+            this.dirty = dirty;
+        }
+
+        private static <T> Entry<T> loaded(T value) {
+            return new Entry<>(value, false);
+        }
+
+        private static <T> Entry<T> dirty(T value) {
+            return new Entry<>(value, true);
         }
     }
 }

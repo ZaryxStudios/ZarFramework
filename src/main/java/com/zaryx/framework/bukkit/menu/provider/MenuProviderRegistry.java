@@ -31,28 +31,36 @@ public class MenuProviderRegistry {
     }
 
     public void registerProvider(String name, MenuProvider provider) {
-        if (providers.containsKey(name)) {
-            throw new IllegalArgumentException("Provider already registered: " + name);
+        if (name == null || name.trim().isEmpty()) {
+            throw new IllegalArgumentException("Provider name must not be null or empty");
         }
-        providers.put(name, provider);
-        registered.add(name);
+        String key = name.trim().toLowerCase();
+        MenuProvider prev = providers.putIfAbsent(key, provider);
+        if (prev != null) {
+            throw new IllegalArgumentException("Provider already registered: " + key);
+        }
+        registered.add(key);
     }
 
     public void unregisterProvider(String name) {
-        providers.remove(name);
-        registered.remove(name);
+        if (name == null) return;
+        String key = name.trim().toLowerCase();
+        providers.remove(key);
+        registered.remove(key);
     }
 
     public MenuProvider getProvider(String name) {
-        return providers.get(name);
+        if (name == null) return null;
+        return providers.get(name.trim().toLowerCase());
     }
 
     public Collection<String> getRegisteredProviders() {
-        return registered;
+        return java.util.Collections.unmodifiableList(registered);
     }
 
     public boolean isProviderRegistered(String name) {
-        return registered.contains(name);
+        if (name == null) return false;
+        return registered.contains(name.trim().toLowerCase());
     }
 
     public int getProviderCount() {

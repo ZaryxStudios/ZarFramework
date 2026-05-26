@@ -68,14 +68,12 @@ public class SoundPlayer {
         for (int i = 0; i < Math.max(1, times); i++) {
             final int index = i;
             Bukkit.getScheduler().runTaskLater(
-                    FrameworkPlugin.getInstance(),
-                    new Runnable() {
+                    FrameworkPlugin.getInstance(), new Runnable() {
                         @Override
                         public void run() {
                             sound.with(volume, pitch).category(category).delay(delay).play(player);
                         }
-                    },
-                    delay * index
+                    }, delay * index
             );
         }
     }

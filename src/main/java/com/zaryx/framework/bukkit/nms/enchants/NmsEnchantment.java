@@ -34,11 +34,11 @@ public class NmsEnchantment {
         if (enchantment == null) return "";
 
         String name = EnchantmentRegistry.canonicalName(enchantment.getName());
-        
+
         if (MODERN) {
             return "minecraft:" + name.toLowerCase();
         }
-        
+
         return name;
     }
 
@@ -88,9 +88,7 @@ public class NmsEnchantment {
 
             Class<?> itemClass = nmsItem.getClass();
             Method addEnchantment = itemClass.getMethod(
-                "addEnchantment", 
-                getNmsEnchantClass(), 
-                int.class
+                "addEnchantment", getNmsEnchantClass(), int.class
             );
 
             // Get NMS enchantment from registry

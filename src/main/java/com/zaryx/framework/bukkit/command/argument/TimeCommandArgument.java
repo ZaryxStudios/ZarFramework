@@ -25,8 +25,7 @@ public class TimeCommandArgument extends CommandArgument<Long> {
         }
     }
 
-    public TimeCommandArgument(String name, boolean optional, String defaultValue,
-                               String minMillis, String maxMillis) {
+    public TimeCommandArgument(String name, boolean optional, String defaultValue, String minMillis, String maxMillis) {
         super(name, optional, parseInternal(defaultValue));
         this.minMillis = minMillis != null ? parseInternal(minMillis) : 0;
         this.maxMillis = maxMillis != null ? parseInternal(maxMillis) : 0;

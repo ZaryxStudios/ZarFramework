@@ -83,16 +83,14 @@ public class NmsSound {
             final int idx = i;
             final Player p = player;
             Bukkit.getScheduler().runTaskLater(
-                    FrameworkPlugin.getInstance(),
-                    new Runnable() {
+                    FrameworkPlugin.getInstance(), new Runnable() {
                         @Override
                         public void run() {
                             if (p != null && p.isOnline()) {
                                 executePlay(p, p.getLocation());
                             }
                         }
-                    },
-                    (long) delay * idx
+                    }, (long) delay * idx
             );
         }
     }
@@ -130,8 +128,7 @@ public class NmsSound {
         if (player == null || bukkitSound == null) return;
         try {
             Class<?> categoryEnum = Class.forName("org.bukkit.SoundCategory");
-            Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class),
-                    cat == null ? "MASTER" : cat.toUpperCase());
+            Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class), cat == null ? "MASTER" : cat.toUpperCase());
             Method stopSound = player.getClass().getMethod("stopSound", Sound.class, categoryEnum);
             stopSound.invoke(player, bukkitSound, enumValue);
         } catch (Throwable ignored) {
@@ -163,9 +160,7 @@ public class NmsSound {
     private void schedulePlay(Runnable task) {
         if (delay > 0) {
             Bukkit.getScheduler().runTaskLater(
-                    FrameworkPlugin.getInstance(),
-                    task,
-                    (long) delay
+                    FrameworkPlugin.getInstance(), task, (long) delay
             );
         } else {
             task.run();

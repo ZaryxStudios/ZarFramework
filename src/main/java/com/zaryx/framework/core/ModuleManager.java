@@ -117,7 +117,7 @@ public class ModuleManager {
      */
     public void disableAll() {
         logger.info("Disabling modules...");
-        
+
         // Disable in reverse order
         for (int i = loadOrder.size() - 1; i >= 0; i--) {
             Module module = loadOrder.get(i);
@@ -232,8 +232,7 @@ public class ModuleManager {
      * @return status summary
      */
     public String getStatusSummary() {
-        return String.format("Modules: %d total, %d enabled, %d disabled", 
-                size(), getEnabledCount(), getDisabledCount());
+        return String.format("Modules: %d total, %d enabled, %d disabled", size(), getEnabledCount(), getDisabledCount());
     }
 
     /**

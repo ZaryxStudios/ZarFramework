@@ -1,48 +1,60 @@
 package com.zaryx.framework.bukkit.storage.extra;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.zaryx.framework.bukkit.storage.core.StorageContext;
+import com.zaryx.framework.bukkit.storage.core.AbstractJsonStorageContext;
 
-import java.lang.reflect.Type;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.HashSet;
+import java.util.Set;
 
-public class MySQLStorage implements StorageContext {
+public class MySQLStorage extends AbstractJsonStorageContext {
 
     private final Connection connection;
-    private final Gson gson;
 
     public MySQLStorage(String host, int port, String database, String user, String password) {
         try {
-            this.connection = DriverManager.getConnection("jdbc:mysql://" + host + ":" + port + "/" + database +
-                            "?useSSL=false&characterEncoding=utf8",
-                    user, password);
+            this.connection = DriverManager.getConnection(
+                    "jdbc:mysql://" + host + ":" + port + "/" + database + "?useSSL=false&characterEncoding=utf8", user, password
+            );
         } catch (SQLException e) {
             throw new RuntimeException("Cannot connect to MySQL", e);
         }
 
-        this.gson = new GsonBuilder().serializeNulls().create();
         this.createTable();
+        this.connect();
     }
 
-    private void createTable() {
-        try (Statement stmt = connection.createStatement()) {
-            stmt.executeUpdate(
-                    "CREATE TABLE IF NOT EXISTS storage_data (" +
-                            "`key` VARCHAR(128) PRIMARY KEY," +
-                            "`value` LONGTEXT NOT NULL" +
-                            ")"
-            );
+    @Override
+    public boolean connect() {
+        return super.connect();
+    }
+
+    @Override
+    public void disconnect() {
+        try {
+            this.connection.close();
+            super.disconnect();
         } catch (SQLException e) {
-            throw new RuntimeException("Cannot create storage table", e);
+            throw new RuntimeException("Cannot disconnect from MySQL", e);
         }
     }
 
     @Override
-    public <T> void save(String key, T value) {
-        String json = gson.toJson(value);
+    public boolean isConnected() {
+        try {
+            return super.isConnected() && !this.connection.isClosed();
+        } catch (SQLException e) {
+            return false;
+        }
+    }
 
-        try (PreparedStatement stmt = connection.prepareStatement(
+    @Override
+    protected void writeJson(String key, String json) {
+        try (PreparedStatement stmt = this.connection.prepareStatement(
                 "REPLACE INTO storage_data (`key`, `value`) VALUES (?, ?)"
         )) {
             stmt.setString(1, key);
@@ -54,20 +66,24 @@ public class MySQLStorage implements StorageContext {
     }
 
     @Override
-    public <T> T load(String key, Class<T> clazz) {
-        String json = getJson(key);
-        return json == null ? null : gson.fromJson(json, clazz);
+    protected String readJson(String key) {
+        try (PreparedStatement stmt = this.connection.prepareStatement(
+                "SELECT `value` FROM storage_data WHERE `key`=?"
+        )) {
+            stmt.setString(1, key);
+            ResultSet rs = stmt.executeQuery();
+            if (!rs.next()) {
+                return null;
+            }
+            return rs.getString("value");
+        } catch (SQLException e) {
+            throw new RuntimeException("Failed to load key: " + key, e);
+        }
     }
 
     @Override
-    public <T> T load(String key, Type type) {
-        String json = getJson(key);
-        return json == null ? null : gson.fromJson(json, type);
-    }
-
-    @Override
-    public boolean exists(String key) {
-        try (PreparedStatement stmt = connection.prepareStatement(
+    protected boolean existsJson(String key) {
+        try (PreparedStatement stmt = this.connection.prepareStatement(
                 "SELECT 1 FROM storage_data WHERE `key`=?"
         )) {
             stmt.setString(1, key);
@@ -78,29 +94,40 @@ public class MySQLStorage implements StorageContext {
     }
 
     @Override
-    public void delete(String key) {
-        try (PreparedStatement stmt = connection.prepareStatement(
+    protected boolean deleteJson(String key) {
+        try (PreparedStatement stmt = this.connection.prepareStatement(
                 "DELETE FROM storage_data WHERE `key`=?"
         )) {
             stmt.setString(1, key);
-            stmt.executeUpdate();
+            return stmt.executeUpdate() > 0;
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private String getJson(String key) {
-        try (PreparedStatement stmt = connection.prepareStatement(
-                "SELECT `value` FROM storage_data WHERE `key`=?"
-        )) {
-            stmt.setString(1, key);
-            ResultSet rs = stmt.executeQuery();
-
-            if (!rs.next()) return null;
-            return rs.getString("value");
-
+    @Override
+    protected Set<String> snapshotKeys() {
+        Set<String> keys = new HashSet<>();
+        try (Statement stmt = this.connection.createStatement(); ResultSet rs = stmt.executeQuery("SELECT `key` FROM storage_data")) {
+            while (rs.next()) {
+                keys.add(rs.getString("key"));
+            }
+            return keys;
         } catch (SQLException e) {
-            throw new RuntimeException("Failed to load key: " + key, e);
+            throw new RuntimeException("Failed to list keys", e);
+        }
+    }
+
+    private void createTable() {
+        try (Statement stmt = this.connection.createStatement()) {
+            stmt.executeUpdate(
+                    "CREATE TABLE IF NOT EXISTS storage_data (" +
+                            "`key` VARCHAR(128) PRIMARY KEY, " +
+                            "`value` LONGTEXT NOT NULL" +
+                            ")"
+            );
+        } catch (SQLException e) {
+            throw new RuntimeException("Cannot create storage table", e);
         }
     }
 }

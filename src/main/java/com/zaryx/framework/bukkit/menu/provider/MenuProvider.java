@@ -8,13 +8,17 @@ import java.util.function.Function;
 
 public abstract class MenuProvider {
 
-    private final Map<MenuKey, Menu> cache = new HashMap<>();
+    private final java.util.concurrent.ConcurrentMap<MenuKey, Menu> cache = new java.util.concurrent.ConcurrentHashMap<>();
 
     protected abstract Menu create(MenuKey parameter);
 
     public Menu get(Object... parameter) {
         MenuKey key = new MenuKey(parameter);
-        return this.cache.computeIfAbsent(key, this::create);
+        Menu m = cache.get(key);
+        if (m != null) return m;
+        Menu created = create(key);
+        Menu existing = cache.putIfAbsent(key, created);
+        return existing != null ? existing : created;
     }
 
     public static MenuProvider of(Function<MenuKey, Menu> factory) {

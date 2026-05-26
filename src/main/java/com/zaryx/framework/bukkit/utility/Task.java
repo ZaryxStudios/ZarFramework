@@ -9,7 +9,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.lang.Thread.UncaughtExceptionHandler;
 
-
 public final class Task {
 
     private static JavaPlugin plugin;

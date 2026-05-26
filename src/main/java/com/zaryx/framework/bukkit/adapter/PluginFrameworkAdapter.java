@@ -23,19 +23,19 @@ import java.util.logging.Logger;
 
 /**
  * Adapter for integrating ZarFramework into Spigot plugins.
- * 
+ *
  * Usage:
  * <pre>
  * public class MyPlugin extends JavaPlugin {
  *     private PluginFrameworkAdapter framework;
- * 
+ *
  *     @Override
  *     public void onEnable() {
  *         framework = new PluginFrameworkAdapter(this)
  *             .withConfig(FrameworkConfig.production())
  *             .initialize();
  *     }
- * 
+ *
  *     @Override
  *     public void onDisable() {
  *         framework.shutdown();

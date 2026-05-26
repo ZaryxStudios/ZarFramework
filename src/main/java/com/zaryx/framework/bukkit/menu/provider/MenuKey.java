@@ -2,15 +2,28 @@ package com.zaryx.framework.bukkit.menu.provider;
 
 import java.util.Arrays;
 
-public class MenuKey {
+public final class MenuKey {
     private final Object[] params;
+    private final int hash;
 
     public MenuKey(Object... params) {
-        this.params = params;
+        this.params = params != null ? Arrays.copyOf(params, params.length) : new Object[0];
+        this.hash = Arrays.hashCode(this.params);
     }
 
     public Object get(int index) {
+        if (index < 0 || index >= params.length) {
+            throw new IndexOutOfBoundsException("Index: " + index + ", size: " + params.length);
+        }
         return params[index];
+    }
+
+    public int size() {
+        return params.length;
+    }
+
+    public Object[] toArray() {
+        return Arrays.copyOf(params, params.length);
     }
 
     @Override
@@ -23,6 +36,6 @@ public class MenuKey {
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(params);
+        return hash;
     }
 }

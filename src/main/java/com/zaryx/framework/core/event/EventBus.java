@@ -67,8 +67,7 @@ public class EventBus {
                 try {
                     listener.onEvent(event);
                 } catch (Exception e) {
-                    logger.log(Level.WARNING, 
-                        "Error processing event: " + event.getClass().getSimpleName(), e);
+                    logger.log(Level.WARNING, "Error processing event: " + event.getClass().getSimpleName(), e);
                 }
             }
         }

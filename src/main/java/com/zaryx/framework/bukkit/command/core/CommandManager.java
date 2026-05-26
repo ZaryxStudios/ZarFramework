@@ -27,13 +27,11 @@ public class CommandManager implements ManagedComponent {
     private final CommandMap commandMap;
     private final Logger logger;
     private final String fallbackPrefix;
-    
-    private final Map<String, Command> commands;
-    private final Map<String, String> aliases;
-    private final Map<String, Boolean> enabled;
-    private final Map<String, String> descriptions;
+
+    private final Map<String, RegisteredCommand> registry;
+    private final Map<String, String> aliasIndex;
     private final EventBus eventBus;
-    
+
     private boolean initialized;
 
     public CommandManager(JavaPlugin plugin, String fallbackPrefix) {
@@ -43,10 +41,8 @@ public class CommandManager implements ManagedComponent {
         this.logger = plugin.getLogger();
         this.commandMap = this.initCommandMap();
         this.fallbackPrefix = fallbackPrefix;
-        this.commands = new ConcurrentHashMap<>();
-        this.aliases = new ConcurrentHashMap<>();
-        this.enabled = new ConcurrentHashMap<>();
-        this.descriptions = new ConcurrentHashMap<>();
+        this.registry = new java.util.concurrent.ConcurrentHashMap<>();
+        this.aliasIndex = new java.util.concurrent.ConcurrentHashMap<>();
         this.eventBus = new EventBus(logger);
         this.initialized = false;
     }
@@ -69,7 +65,7 @@ public class CommandManager implements ManagedComponent {
 
     @Override
     public boolean isEnabled() {
-        return !commands.isEmpty() && initialized;
+        return initialized && !registry.isEmpty();
     }
 
     @Override
@@ -79,7 +75,7 @@ public class CommandManager implements ManagedComponent {
 
     @Override
     public void cleanup() {
-        List<String> commandNames = new ArrayList<>(commands.keySet());
+        List<String> commandNames = new ArrayList<>(registry.keySet());
         for (String name : commandNames) {
             unregister(name);
         }
@@ -89,8 +85,8 @@ public class CommandManager implements ManagedComponent {
 
     @Override
     public String getStats() {
-        long enabledCount = enabled.values().stream().filter(b -> b).count();
-        return "CommandManager | Commands: " + commands.size() + 
+        long enabledCount = registry.values().stream().filter(RegisteredCommand::isEnabled).count();
+        return "CommandManager | Commands: " + registry.size() +
                " | Enabled: " + enabledCount +
                " | Status: " + (isEnabled() ? "ACTIVE" : "INACTIVE");
     }
@@ -111,43 +107,59 @@ public class CommandManager implements ManagedComponent {
             return false;
         }
 
-        String name = command.getName().toLowerCase(Locale.ROOT);
-
-        if (commands.containsKey(name) || aliases.containsKey(name)) {
-            logger.warning("Command '" + name + "' is already registered");
+        String rawName = command.getName();
+        if (rawName == null || rawName.trim().isEmpty()) {
+            logger.warning("Command has no name");
             return false;
         }
 
+        String name = rawName.trim().toLowerCase(Locale.ROOT);
+
+        // Collect aliases and validate collisions first
         Set<String> normalizedAliases = new LinkedHashSet<>();
         for (String alias : command.getAliases()) {
-            if (alias == null || alias.trim().isEmpty()) {
-                continue;
-            }
-
-            String normalizedAlias = alias.trim().toLowerCase(Locale.ROOT);
-            if (normalizedAlias.equals(name)) {
-                continue;
-            }
-
-            if (commands.containsKey(normalizedAlias) || aliases.containsKey(normalizedAlias)) {
-                logger.warning("Command alias '" + normalizedAlias + "' is already registered");
-                return false;
-            }
-
+            if (alias == null) continue;
+            String normalizedAlias = alias.trim();
+            if (normalizedAlias.isEmpty()) continue;
+            normalizedAlias = normalizedAlias.toLowerCase(Locale.ROOT);
+            if (normalizedAlias.equals(name)) continue;
             normalizedAliases.add(normalizedAlias);
         }
 
+        // Check for collisions
+        if (registry.containsKey(name) || aliasIndex.containsKey(name)) {
+            logger.warning("Command '" + name + "' is already registered");
+            return false;
+        }
+        for (String alias : normalizedAliases) {
+            if (registry.containsKey(alias) || aliasIndex.containsKey(alias)) {
+                logger.warning("Command alias '" + alias + "' is already registered");
+                return false;
+            }
+        }
+
+        RegisteredCommand entry = new RegisteredCommand(
+                name,
+                command,
+                description != null ? description : command.getDescription(),
+                normalizedAliases
+        );
+
         try {
+            // Register in the server command map and internal registries
             this.commandMap.register(this.fallbackPrefix, command);
-            this.commands.put(name, command);
-            this.enabled.put(name, true);
-            this.descriptions.put(name, description != null ? description : command.getDescription());
+            this.registry.put(name, entry);
             for (String alias : normalizedAliases) {
-                this.aliases.put(alias, name);
+                this.aliasIndex.put(alias, name);
             }
             logger.fine("Command registered: " + name);
             return true;
         } catch (Exception e) {
+            // rollback partial state on error
+            this.registry.remove(name);
+            for (String alias : normalizedAliases) {
+                this.aliasIndex.remove(alias);
+            }
             logger.log(Level.SEVERE, "Error registering command: " + name, e);
             return false;
         }
@@ -166,17 +178,15 @@ public class CommandManager implements ManagedComponent {
             return false;
         }
 
-        Command command = this.commands.remove(name);
-        this.enabled.remove(name);
-        this.descriptions.remove(name);
+        RegisteredCommand entry = this.registry.remove(name);
         removeAliasesFor(name);
 
-        if (command == null) {
+        if (entry == null) {
             return false;
         }
 
         try {
-            command.unregister(this.commandMap);
+            entry.command.unregister(this.commandMap);
             logger.fine("Command unregistered: " + name);
             return true;
         } catch (Exception e) {
@@ -196,7 +206,12 @@ public class CommandManager implements ManagedComponent {
             return;
         }
 
-        this.enabled.put(name, false);
+        RegisteredCommand entry = this.registry.get(name);
+        if (entry == null) {
+            return;
+        }
+
+        entry.enabled = false;
         if (command instanceof BaseCommand) {
             ((BaseCommand) command).setEnabled(false);
         }
@@ -224,7 +239,12 @@ public class CommandManager implements ManagedComponent {
             return;
         }
 
-        this.enabled.put(name, true);
+        RegisteredCommand entry = this.registry.get(name);
+        if (entry == null) {
+            return;
+        }
+
+        entry.enabled = true;
         if (command instanceof BaseCommand) {
             ((BaseCommand) command).setEnabled(true);
         }
@@ -246,14 +266,16 @@ public class CommandManager implements ManagedComponent {
      */
     public Command getCommand(String name) {
         String primaryName = resolveCommandName(name);
-        return primaryName != null ? commands.get(primaryName) : null;
+        RegisteredCommand entry = primaryName != null ? registry.get(primaryName) : null;
+        return entry != null ? entry.command : null;
     }
 
     /**
      * Checks if a command is registered
      */
     public boolean isRegistered(String name) {
-        return resolveCommandName(name) != null;
+        String primaryName = resolveCommandName(name);
+        return primaryName != null && registry.containsKey(primaryName);
     }
 
     /**
@@ -261,7 +283,8 @@ public class CommandManager implements ManagedComponent {
      */
     public boolean isCommandEnabled(String name) {
         String primaryName = resolveCommandName(name);
-        return primaryName != null && enabled.getOrDefault(primaryName, false);
+        RegisteredCommand entry = primaryName != null ? registry.get(primaryName) : null;
+        return entry != null && entry.enabled;
     }
 
     /**
@@ -269,35 +292,40 @@ public class CommandManager implements ManagedComponent {
      */
     public String getDescription(String name) {
         String primaryName = resolveCommandName(name);
-        return primaryName != null ? descriptions.get(primaryName) : null;
+        RegisteredCommand entry = primaryName != null ? registry.get(primaryName) : null;
+        return entry != null ? entry.description : null;
     }
 
     /**
      * Gets all registered commands
      */
     public Collection<Command> getAllCommands() {
-        return Collections.unmodifiableCollection(commands.values());
+        List<Command> snapshot = new ArrayList<>();
+        for (RegisteredCommand entry : this.registry.values()) {
+            snapshot.add(entry.command);
+        }
+        return Collections.unmodifiableList(snapshot);
     }
 
     /**
      * Gets all command names
      */
     public Set<String> getAllCommandNames() {
-        return Collections.unmodifiableSet(commands.keySet());
+        return Collections.unmodifiableSet(new LinkedHashSet<>(registry.keySet()));
     }
 
     /**
      * Gets the number of registered commands
      */
     public int getCommandCount() {
-        return commands.size();
+        return registry.size();
     }
 
     /**
      * Gets the number of enabled commands
      */
     public long getEnabledCommandCount() {
-        return enabled.values().stream().filter(b -> b).count();
+        return registry.values().stream().filter(RegisteredCommand::isEnabled).count();
     }
 
     /**
@@ -307,17 +335,17 @@ public class CommandManager implements ManagedComponent {
         LinkedHashSet<Command> result = new LinkedHashSet<>();
         if (prefix != null) {
             String lowerPrefix = prefix.toLowerCase(Locale.ROOT);
-            for (Map.Entry<String, Command> entry : commands.entrySet()) {
+            for (Map.Entry<String, RegisteredCommand> entry : registry.entrySet()) {
                 if (entry.getKey().startsWith(lowerPrefix)) {
-                    result.add(entry.getValue());
+                    result.add(entry.getValue().command);
                 }
             }
 
-            for (Map.Entry<String, String> entry : aliases.entrySet()) {
+            for (Map.Entry<String, String> entry : aliasIndex.entrySet()) {
                 if (entry.getKey().startsWith(lowerPrefix)) {
-                    Command command = commands.get(entry.getValue());
+                    RegisteredCommand command = registry.get(entry.getValue());
                     if (command != null) {
-                        result.add(command);
+                        result.add(command.command);
                     }
                 }
             }
@@ -355,15 +383,16 @@ public class CommandManager implements ManagedComponent {
         if (primaryName == null) {
             return null;
         }
-        
-        Command cmd = commands.get(primaryName);
-        boolean isEnabled = enabled.getOrDefault(primaryName, false);
-        String desc = descriptions.get(primaryName);
-        
-        return "Command: " + cmd.getName() + 
-               " | Enabled: " + isEnabled +
-               " | Description: " + (desc != null ? desc : "N/A") +
-               " | Usage: " + cmd.getUsage();
+
+        RegisteredCommand entry = registry.get(primaryName);
+        if (entry == null) {
+            return null;
+        }
+
+        return "Command: " + entry.command.getName() +
+               " | Enabled: " + entry.enabled +
+               " | Description: " + (entry.description != null ? entry.description : "N/A") +
+               " | Usage: " + entry.command.getUsage();
     }
 
     public static CommandManager getInstance() {
@@ -390,20 +419,40 @@ public class CommandManager implements ManagedComponent {
         }
 
         String normalized = name.trim().toLowerCase(Locale.ROOT);
-        if (commands.containsKey(normalized)) {
+        if (registry.containsKey(normalized)) {
             return normalized;
         }
 
-        return aliases.get(normalized);
+        return aliasIndex.get(normalized);
     }
 
     private void removeAliasesFor(String commandName) {
-        Iterator<Map.Entry<String, String>> iterator = aliases.entrySet().iterator();
+        Iterator<Map.Entry<String, String>> iterator = aliasIndex.entrySet().iterator();
         while (iterator.hasNext()) {
             Map.Entry<String, String> entry = iterator.next();
             if (commandName.equals(entry.getValue())) {
                 iterator.remove();
             }
+        }
+    }
+
+    private static final class RegisteredCommand {
+        private final String name;
+        private final Command command;
+        private final String description;
+        private final Set<String> aliases;
+        private boolean enabled;
+
+        private RegisteredCommand(String name, Command command, String description, Set<String> aliases) {
+            this.name = name;
+            this.command = command;
+            this.description = description;
+            this.aliases = new LinkedHashSet<>(aliases);
+            this.enabled = true;
+        }
+
+        private boolean isEnabled() {
+            return this.enabled;
         }
     }
 

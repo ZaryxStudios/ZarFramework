@@ -12,18 +12,33 @@ public final class MenuAPI {
     private MenuAPI() {}
 
     public static void register(String id, MenuProvider provider) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new IllegalArgumentException("id must not be null or empty");
+        }
+        if (provider == null) {
+            throw new IllegalArgumentException("provider must not be null");
+        }
         MenuProviderRegistry.getInstance().registerProvider(id, provider);
     }
 
     public static MenuProvider get(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return null;
+        }
         return MenuProviderRegistry.getInstance().getProvider(id);
     }
 
     public static boolean isRegistered(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return false;
+        }
         return MenuProviderRegistry.getInstance().isProviderRegistered(id);
     }
 
     public static void unregister(String id) {
+        if (id == null || id.trim().isEmpty()) {
+            return;
+        }
         MenuProviderRegistry.getInstance().unregisterProvider(id);
     }
 
@@ -32,12 +47,18 @@ public final class MenuAPI {
     }
 
     public static void open(String id, Player player, Object... params) {
+        if (player == null) {
+            throw new IllegalArgumentException("player must not be null");
+        }
         MenuProvider provider = get(id);
         if (provider == null) {
             throw new IllegalStateException("No menu registered with ID: " + id);
         }
 
         Menu menu = provider.get(params);
+        if (menu == null) {
+            throw new IllegalStateException("Menu provider returned null for ID: " + id);
+        }
         menu.open(player);
     }
 
@@ -46,12 +67,19 @@ public final class MenuAPI {
         if (provider == null) {
             throw new IllegalStateException("No menu registered with ID: " + id);
         }
-        return provider.get(params);
+        Menu menu = provider.get(params);
+        if (menu == null) {
+            throw new IllegalStateException("Menu provider returned null for ID: " + id);
+        }
+        return menu;
     }
 
     public static void open(Menu menu, Player player) {
         if (menu == null) {
             throw new IllegalArgumentException("menu must not be null");
+        }
+        if (player == null) {
+            throw new IllegalArgumentException("player must not be null");
         }
         menu.open(player);
     }

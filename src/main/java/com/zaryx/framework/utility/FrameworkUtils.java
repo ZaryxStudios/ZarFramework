@@ -41,7 +41,7 @@ public class FrameworkUtils {
         }
         StringBuilder result = new StringBuilder();
         boolean capitalizeNext = true;
-        
+
         for (char c : str.toCharArray()) {
             if (c == '_' || c == '-' || c == ' ') {
                 capitalizeNext = true;
@@ -52,7 +52,7 @@ public class FrameworkUtils {
                 result.append(Character.toLowerCase(c));
             }
         }
-        
+
         return result.toString();
     }
 
@@ -103,12 +103,12 @@ public class FrameworkUtils {
      */
     public static String getTimeDifference(long startTime, long endTime) {
         long diffMillis = endTime - startTime;
-        
+
         long seconds = diffMillis / 1000;
         long minutes = seconds / 60;
         long hours = minutes / 60;
         long days = hours / 24;
-        
+
         if (days > 0) {
             return days + "d " + (hours % 24) + "h";
         } else if (hours > 0) {
@@ -125,12 +125,11 @@ public class FrameworkUtils {
      */
     public static String formatBytes(long bytes) {
         if (bytes <= 0) return "0 B";
-        
+
         final String[] units = new String[]{"B", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(bytes) / Math.log10(1024));
-        
-        return String.format("%.1f %s", bytes / Math.pow(1024, digitGroups), 
-                            units[digitGroups]);
+
+        return String.format("%.1f %s", bytes / Math.pow(1024, digitGroups), units[digitGroups]);
     }
 
     /**

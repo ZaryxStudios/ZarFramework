@@ -5,7 +5,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.function.Consumer;
 
-public class MenuItem {
+public final class MenuItem {
 
     private final ItemStack itemStack;
     private final Consumer<MenuClick> action;
@@ -18,7 +18,11 @@ public class MenuItem {
     }
 
     public void handle(MenuClick click) {
-        if (this.action != null) action.accept(click);
+        if (this.action == null || click == null) {
+            return;
+        }
+
+        this.action.accept(click);
     }
 
     public ItemStack getItemStack() {

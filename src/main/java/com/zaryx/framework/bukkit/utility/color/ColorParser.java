@@ -13,7 +13,7 @@ public final class ColorParser {
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
     private static final Pattern BRACKET_HEX_PATTERN = Pattern.compile("<#([A-Fa-f0-9]{6})>");
     private static final Pattern VANILLA_HEX_PATTERN = Pattern.compile("&x(?:&[A-Fa-f0-9]){6}");
-    private static final Pattern GRADIENT_PATTERN = Pattern.compile("<gradient:(#?[A-Fa-f0-9]{6}),(#?[A-Fa-f0-9]{6})>(.*?)</gradient>", Pattern.DOTALL);
+    private static final Pattern GRADIENT_PATTERN = Pattern.compile("<gradient:(#?[A-Fa-f0-9]{6}), (#?[A-Fa-f0-9]{6})>(.*?)</gradient>", Pattern.DOTALL);
     private static final Pattern RAINBOW_PATTERN = Pattern.compile("<rainbow>(.*?)</rainbow>", Pattern.DOTALL);
     private static final Pattern FORMAT_TAG_PATTERN = Pattern.compile("<(bold|italic|underline|strikethrough|magic)>(.*?)</\\1>", Pattern.DOTALL);
 
@@ -181,25 +181,17 @@ public final class ColorParser {
     private static int[] toRgb(String hex) {
         String clean = normalizeHex(hex).substring(1);
         return new int[]{
-                Integer.parseInt(clean.substring(0, 2), 16),
-                Integer.parseInt(clean.substring(2, 4), 16),
-                Integer.parseInt(clean.substring(4, 6), 16)
+                Integer.parseInt(clean.substring(0, 2), 16), Integer.parseInt(clean.substring(2, 4), 16), Integer.parseInt(clean.substring(4, 6), 16)
         };
     }
 
     private static String nearestLegacyColor(int r, int g, int b) {
         int[][] colors = {
-                {0, 0, 0}, {0, 0, 170}, {0, 170, 0}, {0, 170, 170},
-                {170, 0, 0}, {170, 0, 170}, {255, 170, 0}, {170, 170, 170},
-                {85, 85, 85}, {85, 85, 255}, {85, 255, 85}, {85, 255, 255},
-                {255, 85, 85}, {255, 85, 255}, {255, 255, 85}, {255, 255, 255}
+                {0, 0, 0}, {0, 0, 170}, {0, 170, 0}, {0, 170, 170}, {170, 0, 0}, {170, 0, 170}, {255, 170, 0}, {170, 170, 170}, {85, 85, 85}, {85, 85, 255}, {85, 255, 85}, {85, 255, 255}, {255, 85, 85}, {255, 85, 255}, {255, 255, 85}, {255, 255, 255}
         };
 
         ChatColor[] codes = {
-                ChatColor.BLACK, ChatColor.DARK_BLUE, ChatColor.DARK_GREEN, ChatColor.DARK_AQUA,
-                ChatColor.DARK_RED, ChatColor.DARK_PURPLE, ChatColor.GOLD, ChatColor.GRAY,
-                ChatColor.DARK_GRAY, ChatColor.BLUE, ChatColor.GREEN, ChatColor.AQUA,
-                ChatColor.RED, ChatColor.LIGHT_PURPLE, ChatColor.YELLOW, ChatColor.WHITE
+                ChatColor.BLACK, ChatColor.DARK_BLUE, ChatColor.DARK_GREEN, ChatColor.DARK_AQUA, ChatColor.DARK_RED, ChatColor.DARK_PURPLE, ChatColor.GOLD, ChatColor.GRAY, ChatColor.DARK_GRAY, ChatColor.BLUE, ChatColor.GREEN, ChatColor.AQUA, ChatColor.RED, ChatColor.LIGHT_PURPLE, ChatColor.YELLOW, ChatColor.WHITE
         };
 
         int best = 0;

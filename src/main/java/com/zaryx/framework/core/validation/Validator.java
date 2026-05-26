@@ -10,13 +10,12 @@ import java.util.regex.Pattern;
  */
 public class Validator {
 
-    private static final Pattern EMAIL_PATTERN = 
+    private static final Pattern EMAIL_PATTERN =
         Pattern.compile("^[A-Za-z0-9+_.-]+@(.+)$");
-    private static final Pattern URL_PATTERN = 
-        Pattern.compile("^(https?|ftp)://[-a-zA-Z0-9+&@#/%?=~_|!:,.;]*[-a-zA-Z0-9+&@#/%=~_|]$");
-    private static final Pattern UUID_PATTERN = 
-        Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", 
-                       Pattern.CASE_INSENSITIVE);
+    private static final Pattern URL_PATTERN =
+        Pattern.compile("^(https?|ftp)://[-a-zA-Z0-9+&@#/%?=~_|!:, .;]*[-a-zA-Z0-9+&@#/%=~_|]$");
+    private static final Pattern UUID_PATTERN =
+        Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", Pattern.CASE_INSENSITIVE);
 
     /**
      * Validates that a string is not null or empty

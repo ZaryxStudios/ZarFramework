@@ -94,67 +94,101 @@ public abstract class Menu implements InventoryHolder {
     }
 
     public void open(Player player) {
+        if (player == null) return;
+
         MenuContext context = this.context(player);
+        boolean navigating = Boolean.TRUE.equals(context.getOrDefault(MenuContext.NAVIGATING, false));
 
-        if (player.getOpenInventory().getTopInventory().getHolder() instanceof Menu) {
-            Menu previous = (Menu) player.getOpenInventory().getTopInventory().getHolder();
-            context.getBackStack().push(previous);
+        try {
+            if (player.getOpenInventory() != null && player.getOpenInventory().getTopInventory() != null && player.getOpenInventory().getTopInventory().getHolder() instanceof Menu) {
+                Menu previous = (Menu) player.getOpenInventory().getTopInventory().getHolder();
+                if (!navigating) {
+                    context.getBackStack().push(previous);
+                } else {
+                    context.remove(MenuContext.NAVIGATING);
+                }
+            }
+
+            this.beforeOpen(player);
+            this.prepare(player);
+
+            MenuManager.getInstance().register(this, player);
+            player.openInventory(this.inventory);
+
+            // ensure onOpen runs on the main thread
+            Task.sync(() -> this.onOpen(player));
+
+            this.afterOpen(player);
+            this.setDirty(true);
+        } catch (Exception e) {
+            // ensure we don't leave the player in an inconsistent state
+            MenuManager.getInstance().unregister(this, player);
         }
-
-        this.beforeOpen(player);
-        this.prepare(player);
-
-
-        MenuManager.getInstance().register(this, player);
-        player.openInventory(this.inventory);
-
-        this.onOpen(player);
-
-        this.afterOpen(player);
-
-        this.setDirty(true);
     }
 
     public void back(Player player) {
+        if (player == null) return;
+
         MenuContext context = this.context(player);
         Deque<Menu> stack = context.getBackStack();
 
-        if (stack.isEmpty()) {
+        if (stack == null || stack.isEmpty()) {
             player.closeInventory();
             return;
         }
 
         Menu previous = stack.pop();
+        if (previous == null) {
+            player.closeInventory();
+            return;
+        }
 
         context.set(MenuContext.NAVIGATING, true);
         previous.open(player);
     }
 
     public void close(Player player) {
+        if (player == null) return;
+
         this.beforeClose(player);
 
-        if (MenuManager.getInstance().getViewers().isEmpty()) {
-            Task.sync(() -> {
+        // Always run per-player close hooks on the main thread
+        Task.sync(() -> {
+            try {
                 this.onClose(player);
+            } catch (Exception ignored) {}
+            try {
                 this.afterClose(player);
-            });
-        }
+            } catch (Exception ignored) {}
+        });
+
+        // Unregister this player from the menu; MenuManager will cleanup empty sessions
+        MenuManager.getInstance().unregister(this, player);
     }
 
     public void update() {
         if (!this.dirty) return;
         this.dirty = false;
 
-        MenuRenderer.render(this);
+        try {
+            MenuRenderer.render(this);
+        } catch (Exception ignored) {
+            // rendering failures should not propagate to scheduler
+        }
     }
 
     public void handleClick(InventoryClickEvent event) {
         int slot = event.getRawSlot();
         if (slot < 0 || slot >= this.items.length) return;
-
         MenuItem item = this.items[slot];
+        if (item == null) return;
+
+        if (!(event.getWhoClicked() instanceof Player)) return;
         Player player = (Player) event.getWhoClicked();
-        if (item != null) item.handle(new MenuClick(player, event.getClick()));
+
+        try {
+            item.handle(new MenuClick(player, event.getClick()));
+        } catch (Exception ignored) {}
     }
 
     public void setItem(int slot, MenuItem item) {

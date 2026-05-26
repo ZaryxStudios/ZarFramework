@@ -2,29 +2,24 @@ package com.zaryx.framework.bukkit.config.core;
 
 import com.zaryx.framework.bukkit.config.annotation.ConfigFile;
 import com.zaryx.framework.bukkit.config.annotation.ConfigPath;
+import com.zaryx.framework.core.config.AbstractConfigManager;
 import lombok.Getter;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.Plugin;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
 @Getter
-public class ConfigManager {
+public class ConfigManager extends AbstractConfigManager<FileConfiguration> {
 
     private static ConfigManager instance;
-
-    private final Map<Class<?>, FileConfiguration> cache = new HashMap<>();
-    private final Map<Class<?>, File> files = new HashMap<>();
-    private final Map<Class<?>, Boolean> persistence = new HashMap<>();
 
     public ConfigManager() {
         instance = this;
@@ -34,65 +29,27 @@ public class ConfigManager {
         return instance;
     }
 
-    public void load(Class<?> clazz, Plugin plugin) {
+    @Override
+    protected ConfigDescriptor describe(Class<?> clazz) {
         ConfigFile ann = clazz.getAnnotation(ConfigFile.class);
         if (ann == null) {
             throw new IllegalStateException("Missing @ConfigFile on " + clazz.getName());
         }
 
-        FileConfiguration yaml;
-        if (ann.exposeToDisk()) {
-            this.create(clazz, plugin);
-            File file = new File(plugin.getDataFolder(), ann.value());
-            yaml = YamlConfiguration.loadConfiguration(file);
-            this.files.put(clazz, file);
-        } else {
-            yaml = this.loadInMemory(ann, plugin);
-            this.files.remove(clazz);
-        }
-
-        this.cache.put(clazz, yaml);
-        this.persistence.put(clazz, ann.exposeToDisk());
-        this.injectValues(clazz, yaml);
+        return new ConfigDescriptor(ann.value(), ann.exposeToDisk());
     }
 
-        public void save(Class<?> clazz) {
-        FileConfiguration yaml = this.cache.get(clazz);
-            boolean persistent = this.persistence.getOrDefault(clazz, false);
-
-            if (yaml == null) {
-            throw new IllegalStateException(
-                "Config not loaded: " + clazz.getSimpleName()
-            );
-        }
-
-        this.applyValuesToConfig(clazz, yaml);
-
-            if (!persistent) {
-                return;
-            }
-
-            File file = this.files.get(clazz);
-            if (file == null) {
-                throw new IllegalStateException("Config file reference missing for " + clazz.getSimpleName());
-            }
-
-        try {
-            yaml.save(file);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save " + file.getName(), e);
-        }
+    @Override
+    protected FileConfiguration loadPersistent(Class<?> clazz, Object runtime, ConfigDescriptor descriptor) {
+        Plugin plugin = (Plugin) runtime;
+        File file = this.create(plugin, descriptor.path);
+        return YamlConfiguration.loadConfiguration(file);
     }
 
-    public void reload(Class<?> clazz, Plugin plugin) {
-        this.cache.remove(clazz);
-        this.files.remove(clazz);
-        this.persistence.remove(clazz);
-        this.load(clazz, plugin);
-    }
-
-    private FileConfiguration loadInMemory(ConfigFile ann, Plugin plugin) {
-        InputStream stream = plugin.getResource(ann.value());
+    @Override
+    protected FileConfiguration loadTransient(Class<?> clazz, Object runtime, ConfigDescriptor descriptor) {
+        Plugin plugin = (Plugin) runtime;
+        InputStream stream = plugin.getResource(descriptor.path);
         if (stream == null) {
             return new YamlConfiguration();
         }
@@ -100,69 +57,67 @@ public class ConfigManager {
         try (InputStream in = stream; InputStreamReader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             return YamlConfiguration.loadConfiguration(reader);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to load in-memory config " + ann.value(), e);
+            throw new RuntimeException("Failed to load in-memory config " + descriptor.path, e);
         }
     }
 
-    private void create(Class<?> clazz, Plugin plugin) {
-        ConfigFile ann = clazz.getAnnotation(ConfigFile.class);
-        if (ann == null) {
-            throw new IllegalStateException("Missing @ConfigFile on " + clazz.getName());
+    @Override
+    protected void savePersistent(Class<?> clazz, FileConfiguration configuration, Object runtime, String path) {
+        try {
+            Plugin plugin = (Plugin) runtime;
+            File file = new File(plugin.getDataFolder(), path);
+            configuration.save(file);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to save config " + path, e);
         }
+    }
 
-        File file = new File(plugin.getDataFolder(), ann.value());
-        if (file.exists()) return;
+    @Override
+    protected Object readValue(FileConfiguration configuration, String path) {
+        return configuration.get(path);
+    }
+
+    @Override
+    protected void writeValue(FileConfiguration configuration, String path, Object value) {
+        configuration.set(path, value);
+    }
+
+    @Override
+    protected Object defaultValue(Class<?> clazz, Field field) {
+        try {
+            return field.get(null);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Error reading default value for " + field.getName(), e);
+        }
+    }
+
+    @Override
+    protected boolean isBindableField(Field field) {
+        return field.isAnnotationPresent(ConfigPath.class);
+    }
+
+    @Override
+    protected String path(Field field) {
+        return field.getAnnotation(ConfigPath.class).value();
+    }
+
+    private File create(Plugin plugin, String relativePath) {
+        File file = new File(plugin.getDataFolder(), relativePath);
+        if (file.exists()) {
+            return file;
+        }
 
         plugin.getDataFolder().mkdirs();
 
         try {
-            if (plugin.getResource(ann.value()) != null) {
-                plugin.saveResource(ann.value(), false);
+            if (plugin.getResource(relativePath) != null) {
+                plugin.saveResource(relativePath, false);
             } else {
                 file.createNewFile();
             }
+            return file;
         } catch (IOException e) {
-            throw new RuntimeException("Failed to create " + ann.value(), e);
-        }
-    }
-
-    private void injectValues(Class<?> clazz, FileConfiguration yaml) {
-        for (Field field : clazz.getDeclaredFields()) {
-
-            if (!Modifier.isStatic(field.getModifiers())) continue;
-            if (!field.isAnnotationPresent(ConfigPath.class)) continue;
-
-            try {
-                field.setAccessible(true);
-
-                String path = field.getAnnotation(ConfigPath.class).value();
-                Object value = yaml.get(path);
-
-                if (value == null) {
-                    yaml.set(path, field.get(null));
-                } else {
-                    field.set(null, value);
-                }
-
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Error injecting " + field.getName(), e);
-            }
-        }
-    }
-
-    private void applyValuesToConfig(Class<?> clazz, FileConfiguration yaml) {
-        for (Field field : clazz.getDeclaredFields()) {
-
-            if (!Modifier.isStatic(field.getModifiers())) continue;
-            if (!field.isAnnotationPresent(ConfigPath.class)) continue;
-
-            try {
-                field.setAccessible(true);
-                String path = field.getAnnotation(ConfigPath.class).value();
-                yaml.set(path, field.get(null));
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Error saving " + field.getName(), e);
-            }
+            throw new RuntimeException("Failed to create " + relativePath, e);
         }
     }
 }

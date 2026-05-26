@@ -88,7 +88,7 @@ public class AnnouncementPlugin extends JavaPlugin implements CommandExecutor {
 
             String message = String.join(" ", args);
             announcements.add(message);
-            
+
             AnnouncementEvent event = new AnnouncementEvent(message);
             eventBus.publish(event);
 

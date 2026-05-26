@@ -87,16 +87,16 @@ public class BiomeUtils {
      */
     public static String getDisplayName(Biome biome) {
         if (biome == null) return "Unknown";
-        
+
         String name = biome.name().toLowerCase().replace("_", " ");
         StringBuilder result = new StringBuilder();
-        
+
         for (String word : name.split(" ")) {
             result.append(Character.toUpperCase(word.charAt(0)))
                   .append(word.substring(1))
                   .append(" ");
         }
-        
+
         return result.toString().trim();
     }
 
@@ -146,17 +146,7 @@ public class BiomeUtils {
     }
 
     public enum BiomeFamily {
-        AQUATIC,
-        FOREST,
-        MOUNTAIN,
-        PLAINS,
-        DESERT,
-        SNOWY,
-        JUNGLE,
-        SWAMP,
-        NETHER,
-        END,
-        OTHER
+        AQUATIC, FOREST, MOUNTAIN, PLAINS, DESERT, SNOWY, JUNGLE, SWAMP, NETHER, END, OTHER
     }
 
     private static boolean containsAny(String input, String... values) {

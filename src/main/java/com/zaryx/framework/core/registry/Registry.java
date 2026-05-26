@@ -138,7 +138,7 @@ public class Registry<T> {
      * Returns registry statistics
      */
     public String getStats() {
-        return registryName + " | Entries: " + entries.size() + 
+        return registryName + " | Entries: " + entries.size() +
                " | With metadata: " + metadata.size();
     }
 }

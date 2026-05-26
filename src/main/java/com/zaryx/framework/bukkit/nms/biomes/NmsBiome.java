@@ -34,26 +34,26 @@ public class NmsBiome {
 
     private String convertToNmsName(Biome biome) {
         if (biome == null) return "PLAINS";
-        
+
         String name = biome.name();
-        
+
         // Modern versions use namespaced keys
         if (MODERN) {
             return "minecraft:" + name.toLowerCase();
         }
-        
+
         // Legacy versions use uppercase without namespace
         return name;
     }
 
     private Biome convertToBukkit(String nmsName) {
         if (nmsName == null) return Biome.PLAINS;
-        
+
         String name = nmsName;
         if (name.contains(":")) {
             name = name.substring(name.indexOf(":") + 1);
         }
-        
+
         try {
             return Biome.valueOf(name.toUpperCase());
         } catch (IllegalArgumentException e) {
@@ -117,10 +117,10 @@ public class NmsBiome {
         // Modern biome setting via chunk snapshot
         int cx = x >> 4;
         int cz = z >> 4;
-        
+
         Chunk chunk = world.getChunkAt(cx, cz);
         Object nmsChunk = getNmsChunk(chunk);
-        
+
         if (nmsChunk != null) {
             Class<?> chunkClass = nmsChunk.getClass();
             Method getSection = chunkClass.getMethod("getSection", int.class);
@@ -133,10 +133,10 @@ public class NmsBiome {
         // Legacy biome setting
         int cx = x >> 4;
         int cz = z >> 4;
-        
+
         Chunk chunk = world.getChunkAt(cx, cz);
         Object nmsChunk = getNmsChunk(chunk);
-        
+
         if (nmsChunk != null) {
             Class<?> chunkClass = nmsChunk.getClass();
             Method setBiome = chunkClass.getMethod("setBiome", Biome.class);

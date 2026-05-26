@@ -1,132 +1,94 @@
 package com.zaryx.framework.bukkit.storage.extra;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonObject;
-import com.zaryx.framework.bukkit.storage.core.StorageContext;
+import com.zaryx.framework.bukkit.storage.core.AbstractJsonStorageContext;
 
-import java.io.*;
-import java.lang.reflect.Type;
+import java.io.File;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.HashSet;
+import java.util.Set;
 
-public class JsonStorage implements StorageContext {
+public class JsonStorage extends AbstractJsonStorageContext {
 
-    private final File folder;
-    private final Gson gson;
-    private JsonObject root;
-    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private final ConcurrentHashMap<String, Object> cache = new ConcurrentHashMap<>();
+    private final File directory;
 
     public JsonStorage(String folderPath) {
-        this.folder = new File(folderPath);
-        if (!this.folder.exists()) {
-            this.folder.mkdirs();
-        }
-
-        this.gson = new GsonBuilder().setPrettyPrinting().serializeNulls().create();
-
-        this.loadFile();
-    }
-
-    private void loadFile() {
-        try {
-            if (!this.folder.exists()) {
-                this.folder.getParentFile().mkdirs();
-                this.folder.createNewFile();
-
-                this.root = new JsonObject();
-                this.saveFile();
-            }
-
-            try (Reader reader = new FileReader(this.folder)) {
-                this.root = gson.fromJson(reader, JsonObject.class);
-                if (this.root == null) this.root = new JsonObject();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } catch (Exception ignored) {
-        }
-    }
-
-    public void saveFile() {
-        lock.writeLock().lock();
-        try {
-            try (Writer writer = new FileWriter(this.folder)) {
-                gson.toJson(this.root, writer);
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    private File file(String key) {
-        return new File(this.folder, key + ".json");
+        this.directory = new File(folderPath);
+        this.directory.mkdirs();
+        this.connect();
     }
 
     @Override
-    public <T> void save(String key, T value) {
-        // Almacenar en caché antes de guardar
-        cache.put(key, value);
-        
-        File file = this.file(key);
+    public boolean connect() {
+        this.directory.mkdirs();
+        return super.connect();
+    }
 
+    @Override
+    protected void writeJson(String key, String json) {
+        File file = this.file(key);
         try (Writer writer = new OutputStreamWriter(
-                Files.newOutputStream(file.toPath()),
-                StandardCharsets.UTF_8
+                Files.newOutputStream(file.toPath()), StandardCharsets.UTF_8
         )) {
-            this.gson.toJson(value, writer);
+            writer.write(json);
         } catch (IOException e) {
             throw new RuntimeException("Failed to save json key: " + key, e);
         }
     }
 
     @Override
-    public <T> T load(String key, Class<T> clazz) {
-        // Verificar en caché primero
-        Object cached = cache.get(key);
-        if (clazz.isInstance(cached)) {
-            return clazz.cast(cached);
-        }
-        
+    protected String readJson(String key) {
         File file = this.file(key);
-        if (!file.exists()) return null;
+        if (!file.exists()) {
+            return null;
+        }
 
-        try (Reader reader = new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8)) {
-            T result = this.gson.fromJson(reader, clazz);
-            // Almacenar en caché el resultado
-            cache.put(key, result);
-            return result;
+        try (Reader reader = Files.newBufferedReader(file.toPath(), StandardCharsets.UTF_8)) {
+            StringBuilder builder = new StringBuilder();
+            char[] buffer = new char[1024];
+            int read;
+
+            while ((read = reader.read(buffer)) != -1) {
+                builder.append(buffer, 0, read);
+            }
+
+            return builder.toString();
         } catch (IOException e) {
             throw new RuntimeException("Failed to load json key: " + key, e);
         }
     }
 
     @Override
-    public <T> T load(String key, Type type) {
-        File file = this.file(key);
-        if (!file.exists()) return null;
+    protected boolean existsJson(String key) {
+        return this.file(key).exists();
+    }
 
-        try (Reader reader = new InputStreamReader(Files.newInputStream(file.toPath()), StandardCharsets.UTF_8)) {
-            return this.gson.fromJson(reader, type);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load json key: " + key, e);
+    @Override
+    protected boolean deleteJson(String key) {
+        return this.file(key).delete();
+    }
+
+    @Override
+    protected Set<String> snapshotKeys() {
+        Set<String> keys = new HashSet<>();
+        File[] files = this.directory.listFiles((dir, name) -> name.endsWith(".json"));
+        if (files == null) {
+            return keys;
         }
+
+        for (File file : files) {
+            String name = file.getName();
+            keys.add(name.substring(0, name.length() - 5));
+        }
+
+        return keys;
     }
 
-    @Override
-    public boolean exists(String key) {
-        return cache.containsKey(key) || this.file(key).exists();
-    }
-
-    @Override
-    public void delete(String key) {
-        cache.remove(key);
-        // Eliminar archivo físico
-        this.file(key).delete();
+    private File file(String key) {
+        return new File(this.directory, key + ".json");
     }
 }

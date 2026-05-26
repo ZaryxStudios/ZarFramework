@@ -44,7 +44,7 @@ public class FrameworkPlugin extends JavaPlugin {
         instance = this;
         Task.setPlugin(this);
         this.frameworkLogger = this.getLogger();
-        
+
         frameworkLogger.info("╔════════════════════════════════════════╗");
         frameworkLogger.info("║   ZarFramework loading...              ║");
         frameworkLogger.info("║   Version: " + getDescription().getVersion() + "                    ║");

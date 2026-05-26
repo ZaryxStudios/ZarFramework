@@ -18,8 +18,7 @@ public class DoubleCommandArgument extends CommandArgument<Double> {
         this.max = max;
     }
 
-    public DoubleCommandArgument(String name, boolean optional, Double defaultValue,
-                                 int min, int max) {
+    public DoubleCommandArgument(String name, boolean optional, Double defaultValue, int min, int max) {
         super(name, optional, defaultValue);
         this.min = min;
         this.max = max;
@@ -44,9 +43,7 @@ public class DoubleCommandArgument extends CommandArgument<Double> {
     @Override
     public List<String> tabComplete(CommandSender sender, String input) {
         return Arrays.asList(
-                String.valueOf(min),
-                String.valueOf(min * 10),
-                String.valueOf(min * 100)
+                String.valueOf(min), String.valueOf(min * 10), String.valueOf(min * 100)
         );
     }
 }

@@ -17,8 +17,7 @@ public class IntegerCommandArgument extends CommandArgument<Integer> {
         this.max = max;
     }
 
-    public IntegerCommandArgument(String name, boolean optional, int defaultValue,
-                                  int min, int max) {
+    public IntegerCommandArgument(String name, boolean optional, int defaultValue, int min, int max) {
         super(name, optional, defaultValue);
         this.min = min;
         this.max = max;
@@ -43,9 +42,7 @@ public class IntegerCommandArgument extends CommandArgument<Integer> {
     @Override
     public List<String> tabComplete(CommandSender sender, String input) {
         return Arrays.asList(
-                String.valueOf(this.min),
-                String.valueOf(this.min * 10),
-                String.valueOf(this.min * 100)
+                String.valueOf(this.min), String.valueOf(this.min * 10), String.valueOf(this.min * 100)
         );
     }
 }

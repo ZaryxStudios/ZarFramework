@@ -9,7 +9,7 @@ import java.util.Map;
 public class PlaceholderContext {
 
     private final Map<String, String> values = new HashMap<>();
-    
+
     public PlaceholderContext add(String key, Object value) {
         this.values.put(key, String.valueOf(value));
         return this;

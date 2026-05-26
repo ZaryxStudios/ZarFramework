@@ -118,7 +118,7 @@ public class FrameworkCore {
 
         try {
             logger.info("Starting FrameworkCore...");
-            
+
             if (!moduleManager.initializeAll()) {
                 logger.severe("Error initializing modules");
                 return false;
