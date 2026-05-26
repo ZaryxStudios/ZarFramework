@@ -1,0 +1,222 @@
+package com.zaryx.framework.bukkit.nms.sounds;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Sound;
+import org.bukkit.entity.Player;
+
+import com.zaryx.framework.bukkit.FrameworkPlugin;
+
+import java.lang.reflect.Method;
+import java.util.HashSet;
+import java.util.Set;
+
+/**
+ * Unified cross-version sound manager (modified to use SoundManager volume multipliers).
+ */
+public class NmsSound {
+
+    private final String soundName;
+    private final Sound bukkitSound;
+    private float volume;
+    private float pitch;
+    private String category;
+    private int delay;
+
+    public NmsSound(String soundName) {
+        this(soundName, 1.0f, 1.0f);
+    }
+
+    public NmsSound(String soundName, float volume, float pitch) {
+        this.soundName = soundName;
+        this.bukkitSound = resolveBukkitSound(soundName);
+        this.volume = clamp(volume, 0.0f, 2.0f);
+        this.pitch = clamp(pitch, 0.5f, 2.0f);
+        this.category = "MASTER";
+        this.delay = 0;
+    }
+
+    // Builder-style methods
+    public NmsSound volume(float vol) {
+        this.volume = clamp(vol, 0.0f, 2.0f);
+        return this;
+    }
+
+    public NmsSound pitch(float p) {
+        this.pitch = clamp(p, 0.5f, 2.0f);
+        return this;
+    }
+
+    public NmsSound category(String cat) {
+        this.category = cat == null ? "MASTER" : cat.toUpperCase();
+        return this;
+    }
+
+    public NmsSound delay(int ticks) {
+        this.delay = Math.max(0, ticks);
+        return this;
+    }
+
+    public NmsSound with(float v, float p) {
+        NmsSound copy = new NmsSound(soundName, v, p);
+        copy.category = this.category;
+        copy.delay = this.delay;
+        return copy;
+    }
+
+    // Play methods - various signatures for flexibility
+    public void play(Player player) {
+        if (player == null || bukkitSound == null) return;
+        schedulePlay(() -> executePlay(player, player.getLocation()));
+    }
+
+    public void play(Player player, String cat) {
+        if (player == null) return;
+        String oldCat = this.category;
+        this.category = cat == null ? "MASTER" : cat.toUpperCase();
+        play(player);
+        this.category = oldCat;
+    }
+
+    public void play(Player player, int times) {
+        for (int i = 0; i < Math.max(1, times); i++) {
+            final int idx = i;
+            final Player p = player;
+            Bukkit.getScheduler().runTaskLater(
+                    FrameworkPlugin.getInstance(),
+                    new Runnable() {
+                        @Override
+                        public void run() {
+                            if (p != null && p.isOnline()) {
+                                executePlay(p, p.getLocation());
+                            }
+                        }
+                    },
+                    (long) delay * idx
+            );
+        }
+    }
+
+    public void play(Location location) {
+        if (location == null || location.getWorld() == null || bukkitSound == null) return;
+        schedulePlay(() -> executePlay(null, location));
+    }
+
+    public void playToAll() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            play(player);
+        }
+    }
+
+    public void playInRadius(Location center, double radius) {
+        if (center == null || center.getWorld() == null || bukkitSound == null) return;
+        for (Player player : center.getWorld().getPlayers()) {
+            if (player.getLocation().distance(center) <= radius) {
+                executePlay(player, center);
+            }
+        }
+    }
+
+    // Stop methods
+    public void stop(Player player) {
+        if (player == null || bukkitSound == null) return;
+        try {
+            Method stopSound = player.getClass().getMethod("stopSound", Sound.class);
+            stopSound.invoke(player, bukkitSound);
+        } catch (Throwable ignored) {}
+    }
+
+    public void stop(Player player, String cat) {
+        if (player == null || bukkitSound == null) return;
+        try {
+            Class<?> categoryEnum = Class.forName("org.bukkit.SoundCategory");
+            Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class),
+                    cat == null ? "MASTER" : cat.toUpperCase());
+            Method stopSound = player.getClass().getMethod("stopSound", Sound.class, categoryEnum);
+            stopSound.invoke(player, bukkitSound, enumValue);
+        } catch (Throwable ignored) {
+            stop(player);
+        }
+    }
+
+    // Getters
+    public String getSoundName() { return soundName; }
+    public Sound getBukkitSound() { return bukkitSound; }
+    public float getVolume() { return volume; }
+    public float getPitch() { return pitch; }
+    public String getCategory() { return category; }
+    public int getDelay() { return delay; }
+
+    public static Set<String> getAvailableSounds() {
+        Set<String> sounds = new HashSet<String>();
+        for (Sound sound : Sound.values()) {
+            sounds.add(sound.name());
+        }
+        return sounds;
+    }
+
+    public static boolean exists(String name) {
+        return resolveBukkitSound(name) != null;
+    }
+
+    // Private helpers
+    private void schedulePlay(Runnable task) {
+        if (delay > 0) {
+            Bukkit.getScheduler().runTaskLater(
+                    FrameworkPlugin.getInstance(),
+                    task,
+                    (long) delay
+            );
+        } else {
+            task.run();
+        }
+    }
+
+    private void executePlay(Player player, Location location) {
+        if (bukkitSound == null) return;
+        float effectiveVolume = SoundManager.applyCategoryVolume(this.volume, this.category);
+        if (!playWithCategory(player, location, effectiveVolume)) {
+            if (player != null) {
+                player.playSound(location, bukkitSound, effectiveVolume, pitch);
+            } else if (location.getWorld() != null) {
+                location.getWorld().playSound(location, bukkitSound, effectiveVolume, pitch);
+            }
+        }
+    }
+
+    private boolean playWithCategory(Player player, Location location, float effectiveVolume) {
+        try {
+            Class<?> categoryEnum = Class.forName("org.bukkit.SoundCategory");
+            Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class), category);
+
+            if (player != null) {
+                Method playerPlay = player.getClass().getMethod("playSound", Location.class, Sound.class, categoryEnum, float.class, float.class);
+                playerPlay.invoke(player, location, bukkitSound, enumValue, effectiveVolume, pitch);
+            } else if (location.getWorld() != null) {
+                Method worldPlay = location.getWorld().getClass().getMethod("playSound", Location.class, Sound.class, categoryEnum, float.class, float.class);
+                worldPlay.invoke(location.getWorld(), location, bukkitSound, enumValue, effectiveVolume, pitch);
+            }
+            return true;
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    private static Sound resolveBukkitSound(String name) {
+        if (name == null || name.trim().isEmpty()) return fallbackSound();
+        String upper = name.toUpperCase();
+        try { return Sound.valueOf(upper); } catch (IllegalArgumentException ignored) {}
+        String normalized = upper.replace("MINECRAFT:", "").replace('.', '_').replace('-', '_');
+        try { return Sound.valueOf(normalized); } catch (IllegalArgumentException ignored) {}
+        return fallbackSound();
+    }
+
+    private static Sound fallbackSound() {
+        Sound[] values = Sound.values();
+        return values.length == 0 ? null : values[0];
+    }
+
+    private static float clamp(float value, float min, float max) {
+        return Math.max(min, Math.min(max, value));
+    }
+}

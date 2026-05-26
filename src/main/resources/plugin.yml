@@ -1,0 +1,4 @@
+name: ZarFramework
+version: ${project.version}
+main: com.zaryx.framework.bukkit.FrameworkPlugin
+author: Escaner
