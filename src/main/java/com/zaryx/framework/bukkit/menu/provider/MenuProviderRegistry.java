@@ -110,7 +110,9 @@ public class MenuProviderRegistry {
         for (MenuProvider provider : providers.values()) {
             try {
                 provider.clearCache();
-            } catch (Exception ignored) {}
+            } catch (Exception e) {
+                logger.log(Level.FINE, "Error clearing provider cache during shutdown", e);
+            }
         }
         providers.clear();
         registered.clear();

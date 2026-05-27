@@ -4,12 +4,16 @@ import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Utility for resolving materials and item stacks for menu items.
  * Handles legacy material names and null-safety.
  */
 public final class MenuResolver {
+
+    private static final Logger LOGGER = Logger.getLogger(MenuResolver.class.getName());
 
     private MenuResolver() {}
 
@@ -30,7 +34,9 @@ public final class MenuResolver {
         try {
             Material legacy = Material.getMaterial("LEGACY_" + normalized);
             if (legacy != null) return legacy;
-        } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Failed to resolve legacy material: LEGACY_" + normalized, e);
+        }
 
         return Material.AIR;
     }
