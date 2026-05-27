@@ -5,10 +5,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
-public class PlayerCommandArgument extends CommandArgument<Player> {
+/**
+ * A command argument that resolves an online player by name.
+ */
+public final class PlayerCommandArgument extends CommandArgument<Player> {
 
     public PlayerCommandArgument(String name) {
         super(name);
@@ -16,20 +20,23 @@ public class PlayerCommandArgument extends CommandArgument<Player> {
 
     @Override
     public boolean validate(String input) {
-        return Bukkit.getPlayer(input) != null;
+        if (input == null) return false;
+        return Bukkit.getPlayer(input.trim()) != null;
     }
 
     @Override
     public Player parse(String input) {
-        return Bukkit.getPlayer(input);
+        return input != null ? Bukkit.getPlayer(input.trim()) : null;
     }
 
     @Override
     public List<String> tabComplete(CommandSender sender, String input) {
-        return Bukkit.getOnlinePlayers().stream()
-                .map(Player::getName)
-                .filter(name -> name.toLowerCase().startsWith(input.toLowerCase()))
-                .collect(Collectors.toList());
+        String prefix = input != null ? input.trim().toLowerCase() : "";
+        List<String> results = new ArrayList<>();
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            String name = player.getName();
+            if (name.toLowerCase().startsWith(prefix)) results.add(name);
+        }
+        return results;
     }
-
 }

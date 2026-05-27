@@ -2,7 +2,10 @@ package com.zaryx.framework.bukkit.command.argument;
 
 import com.zaryx.framework.bukkit.command.extra.CommandArgument;
 
-public class StringCommandArgument extends CommandArgument<String> {
+/**
+ * A command argument that accepts any non-null string.
+ */
+public final class StringCommandArgument extends CommandArgument<String> {
 
     public StringCommandArgument(String name) {
         super(name);
@@ -14,7 +17,7 @@ public class StringCommandArgument extends CommandArgument<String> {
 
     @Override
     public boolean validate(String input) {
-        return true;
+        return input != null;
     }
 
     @Override

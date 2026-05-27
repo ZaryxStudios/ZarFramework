@@ -6,8 +6,6 @@ import com.zaryx.framework.bukkit.command.annotation.Info;
 import com.zaryx.framework.bukkit.command.extra.CommandArgument;
 import com.zaryx.framework.bukkit.command.extra.CommandContext;
 import com.zaryx.framework.bukkit.utility.Task;
-import lombok.Getter;
-import lombok.Setter;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -17,74 +15,100 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-@Getter @Setter
+/**
+ * Base command class with annotation support, sub-command routing, and argument parsing.
+ * Extend this to create framework commands.
+ *
+ * <p>Lifecycle:
+ * <ol>
+ *   <li>Constructor resolves name from {@code @Info} annotation or parameter</li>
+ *   <li>{@link #execute(CommandContext)} is called on the main thread after argument validation</li>
+ *   <li>Sub-commands are routed automatically based on the first argument</li>
+ * </ol>
+ */
 public abstract class BaseCommand extends Command {
+
+    private static final Logger LOGGER = Logger.getLogger(BaseCommand.class.getName());
 
     protected String permission;
     protected boolean playerOnly;
     protected boolean consoleOnly;
 
-    private boolean enabled;
-
+    private volatile boolean enabled;
     private final List<BaseCommand> subCommands;
     private final List<CommandArgument<?>> commandArguments;
 
-    public boolean isEnabled() {
-        return this.enabled;
-    }
+    // ---- Constructors ----
 
-    public void setEnabled(boolean enabled) {
-        this.enabled = enabled;
-    }
-
+    /**
+     * Construct a command using the {@code @Info} annotation to resolve the name.
+     * @throws IllegalStateException if no {@code @Info} annotation is found on the subclass
+     */
     protected BaseCommand() {
         super(resolveNameFromAnnotation());
-        this.applyAnnotations();
-
         this.enabled = true;
         this.subCommands = new ArrayList<>();
-
-        List<CommandArgument<?>> rawCommandArguments = this.arguments();
-        this.commandArguments = Collections.unmodifiableList(this.sortArguments(rawCommandArguments));
+        this.commandArguments = Collections.unmodifiableList(sortArguments(this.arguments()));
+        applyAnnotations();
     }
 
+    /**
+     * Construct a command with an explicit name.
+     */
     protected BaseCommand(String name) {
         super(name);
-
         this.enabled = true;
         this.subCommands = new ArrayList<>();
-
-        List<CommandArgument<?>> rawCommandArguments = this.arguments();
-        this.commandArguments = Collections.unmodifiableList(this.sortArguments(rawCommandArguments));
+        this.commandArguments = Collections.unmodifiableList(sortArguments(this.arguments()));
     }
+
+    // ---- Getters / Setters ----
+
+    public boolean isEnabled() { return enabled; }
+    public void setEnabled(boolean enabled) { this.enabled = enabled; }
+
+    public String getPermission() { return permission; }
+    public void setPermission(String permission) { this.permission = permission; }
+
+    public boolean isPlayerOnly() { return playerOnly; }
+    public void setPlayerOnly(boolean playerOnly) { this.playerOnly = playerOnly; }
+
+    public boolean isConsoleOnly() { return consoleOnly; }
+    public void setConsoleOnly(boolean consoleOnly) { this.consoleOnly = consoleOnly; }
+
+    public List<BaseCommand> getSubCommands() { return Collections.unmodifiableList(subCommands); }
+    public List<CommandArgument<?>> getCommandArguments() { return commandArguments; }
+
+    // ---- Execution ----
 
     @Override
     public final boolean execute(CommandSender sender, String label, String[] args) {
-        if (!this.canExecute(sender)) {
-            return true;
-        }
+        if (!canExecute(sender)) return true;
 
-        BaseCommand subCommand = this.findSubCommandFor(args);
-        if (subCommand != null) {
-            String[] subArgs = args != null && args.length > 1 ? Arrays.copyOfRange(args, 1, args.length) : new String[0];
-            return subCommand.execute(sender, args != null && args.length > 0 ? args[0] : label, subArgs);
+        BaseCommand sub = findSubCommandFor(args);
+        if (sub != null) {
+            String[] subArgs = (args != null && args.length > 1)
+                    ? Arrays.copyOfRange(args, 1, args.length) : new String[0];
+            String subLabel = (args != null && args.length > 0) ? args[0] : label;
+            return sub.execute(sender, subLabel, subArgs);
         }
 
         try {
-            CommandContext commandContext = this.buildContext(sender, args);
-            // Ensure command logic runs on the main server thread when required
+            CommandContext ctx = buildContext(sender, args);
             Task.sync(() -> {
                 try {
-                    this.execute(commandContext);
-                } catch (Exception ex) {
-                    sender.sendMessage("An internal error occurred while executing the command.");
+                    execute(ctx);
+                } catch (Exception e) {
+                    sender.sendMessage("§cAn internal error occurred while executing the command.");
+                    LOGGER.log(Level.WARNING, "Error executing command: " + getName(), e);
                 }
             });
         } catch (IllegalArgumentException e) {
-            sender.sendMessage(e.getMessage());
+            sender.sendMessage("§c" + e.getMessage());
         }
-
         return true;
     }
 
@@ -94,217 +118,176 @@ public abstract class BaseCommand extends Command {
             return getSubCommandNames("");
         }
 
-        BaseCommand subCommand = this.findSubCommandFor(args);
-        if (subCommand != null) {
+        BaseCommand sub = findSubCommandFor(args);
+        if (sub != null) {
             String[] subArgs = Arrays.copyOfRange(args, 1, args.length);
-            return subCommand.tabComplete(sender, alias, subArgs);
+            return sub.tabComplete(sender, alias, subArgs);
         }
 
         if (args.length == 1) {
             return getSubCommandNames(args[0]);
         }
 
-        int index = args.length - 1;
-        if (index < 0 || index >= this.commandArguments.size()) {
+        int idx = args.length - 1;
+        if (idx < 0 || idx >= commandArguments.size()) {
             return Collections.emptyList();
         }
 
-        CommandArgument<?> commandArgument = this.commandArguments.get(index);
-        String input = args[index] != null ? args[index] : "";
+        CommandArgument<?> arg = commandArguments.get(idx);
+        String input = args[idx] != null ? args[idx] : "";
         try {
-            return commandArgument.tabComplete(sender, input);
+            return arg.tabComplete(sender, input);
         } catch (Exception e) {
             return Collections.emptyList();
         }
     }
 
+    /**
+     * Override this method with your command logic.
+     * Called on the main thread after argument validation.
+     */
+    public abstract void execute(CommandContext ctx);
+
+    // ---- Context building ----
+
+    /**
+     * Build a CommandContext from the sender and raw arguments.
+     * Validates and parses each declared argument.
+     * @throws IllegalArgumentException if validation fails or required arguments are missing
+     */
     protected CommandContext buildContext(CommandSender sender, String[] inputArgs) {
-        return this.createContext(sender, inputArgs);
-    }
+        String[] args = (inputArgs != null) ? inputArgs : new String[0];
 
-    protected CommandContext createContext(CommandSender sender, String[] inputArgs) {
-        String[] arguments = inputArgs != null ? inputArgs : new String[0];
-
-        if (arguments.length > this.commandArguments.size()) {
+        if (args.length > commandArguments.size()) {
             throw new IllegalArgumentException("Too many arguments.");
         }
 
-        CommandContext commandContext = new CommandContext(sender);
-        for (int i = 0; i < this.commandArguments.size(); i++) {
-            CommandArgument<?> commandArgument = this.commandArguments.get(i);
+        CommandContext ctx = new CommandContext(sender);
+        for (int i = 0; i < commandArguments.size(); i++) {
+            CommandArgument<?> arg = commandArguments.get(i);
 
-            if (!commandArgument.shouldParse(commandContext)) {
-                continue;
-            }
+            if (!arg.shouldParse(ctx)) continue;
 
-            if (i >= arguments.length) {
-                if (commandArgument.isRequired(commandContext)) {
-                    throw new IllegalArgumentException("Missing required argument: " + commandArgument.getName());
+            if (i >= args.length) {
+                if (arg.isRequired(ctx)) {
+                    throw new IllegalArgumentException("Missing required argument: " + arg.getName());
                 }
-
-                commandContext.put(commandArgument.getName(), commandArgument.getDefaultValue());
+                ctx.put(arg.getName(), arg.getDefaultValue());
                 continue;
             }
 
-            String input = arguments[i];
-
-            if (!commandArgument.validate(input)) {
-                throw new IllegalArgumentException("Invalid argument: '" + commandArgument.getName() + "'");
+            String input = args[i];
+            if (!arg.validate(input)) {
+                throw new IllegalArgumentException("Invalid argument: '" + arg.getName() + "'");
             }
-
-            commandContext.put(commandArgument.getName(), commandArgument.parse(input));
+            ctx.put(arg.getName(), arg.parse(input));
         }
-
-        return commandContext;
+        return ctx;
     }
 
-    private boolean canExecute(CommandSender sender) {
-        if (!this.enabled) {
-            sender.sendMessage("This command is disabled.");
-            return false;
-        }
-
-        if (this.playerOnly && !(sender instanceof Player)) {
-            sender.sendMessage("This command can only be used by a player.");
-            return false;
-        }
-
-        if (this.consoleOnly && sender instanceof Player) {
-            sender.sendMessage("This command can only be used from console.");
-            return false;
-        }
-
-        if (this.permission != null && !this.permission.isEmpty() && !sender.hasPermission(this.permission)) {
-            sender.sendMessage("You do not have permission to use this command.");
-            return false;
-        }
-
-        return true;
-    }
-
-    private BaseCommand findSubCommandFor(String[] args) {
-        if (args == null || args.length == 0) {
-            return null;
-        }
-
-        return findSubCommand(args[0]);
-    }
+    // ---- Arguments (override in subclass) ----
 
     protected List<CommandArgument<?>> arguments() {
         return Collections.emptyList();
     }
 
-    public void addSubCommand(BaseCommand subCommand) {
-        if (subCommand != null) {
-            this.subCommands.add(subCommand);
-        }
+    // ---- Sub-commands ----
+
+    public void addSubCommand(BaseCommand sub) {
+        if (sub != null) subCommands.add(sub);
     }
 
-    public abstract void execute(CommandContext commandContext);
+    public BaseCommand findSubCommand(String input) {
+        if (input == null || input.trim().isEmpty()) return null;
+        String key = input.trim().toLowerCase(Locale.ROOT);
+        for (BaseCommand sub : subCommands) {
+            if (sub == null) continue;
+            if (sub.getName() != null && sub.getName().toLowerCase(Locale.ROOT).equals(key)) return sub;
+            for (String alias : sub.getAliases()) {
+                if (alias != null && alias.toLowerCase(Locale.ROOT).equals(key)) return sub;
+            }
+        }
+        return null;
+    }
+
+    public List<String> getSubCommandNames(String prefix) {
+        String pfx = (prefix != null) ? prefix.trim().toLowerCase(Locale.ROOT) : "";
+        List<String> names = new ArrayList<>();
+        for (BaseCommand sub : subCommands) {
+            if (sub == null || sub.getName() == null) continue;
+            String n = sub.getName();
+            if (pfx.isEmpty() || n.toLowerCase(Locale.ROOT).startsWith(pfx)) names.add(n);
+            for (String alias : sub.getAliases()) {
+                if (alias != null && (pfx.isEmpty() || alias.toLowerCase(Locale.ROOT).startsWith(pfx))) names.add(alias);
+            }
+        }
+        return names;
+    }
+
+    // ---- Internal helpers ----
+
+    private boolean canExecute(CommandSender sender) {
+        if (!enabled) {
+            sender.sendMessage("§cThis command is currently disabled.");
+            return false;
+        }
+        if (playerOnly && !(sender instanceof Player)) {
+            sender.sendMessage("§cThis command can only be used by a player.");
+            return false;
+        }
+        if (consoleOnly && sender instanceof Player) {
+            sender.sendMessage("§cThis command can only be used from the console.");
+            return false;
+        }
+        if (permission != null && !permission.isEmpty() && !sender.hasPermission(permission)) {
+            sender.sendMessage("§cYou do not have permission to use this command.");
+            return false;
+        }
+        return true;
+    }
+
+    private BaseCommand findSubCommandFor(String[] args) {
+        if (args == null || args.length == 0) return null;
+        return findSubCommand(args[0]);
+    }
 
     private void applyAnnotations() {
-        Class<?> clazz = getClass();
-
-        if (clazz.isAnnotationPresent(Info.class)) {
-            Info info = clazz.getAnnotation(Info.class);
+        Class<?> clz = getClass();
+        if (clz.isAnnotationPresent(Info.class)) {
+            Info info = clz.getAnnotation(Info.class);
             this.permission = info.permission();
             this.playerOnly = info.playerOnly();
             this.consoleOnly = info.consoleOnly();
         }
-
-        if (clazz.isAnnotationPresent(Aliases.class)) {
-            this.setAliases(Arrays.asList(
-                    clazz.getAnnotation(Aliases.class).value()
-            ));
+        if (clz.isAnnotationPresent(Aliases.class)) {
+            setAliases(Arrays.asList(clz.getAnnotation(Aliases.class).value()));
         }
-
-        if (clazz.isAnnotationPresent(Description.class)) {
-            this.description = clazz.getAnnotation(Description.class).value();
-            this.setDescription(description);
+        if (clz.isAnnotationPresent(Description.class)) {
+            this.description = clz.getAnnotation(Description.class).value();
+            setDescription(this.description);
         }
     }
 
-    private List<CommandArgument<?>> sortArguments(List<CommandArgument<?>> original) {
+    private static List<CommandArgument<?>> sortArguments(List<CommandArgument<?>> original) {
         List<CommandArgument<?>> sorted = new ArrayList<>(original);
         sorted.sort((a, b) -> {
-            int priority = Integer.compare(a.getPriority(), b.getPriority());
-            if (priority != 0) {
-                return priority;
-            }
-
-            if (a.isOptional() != b.isOptional()) {
-                return a.isOptional() ? 1 : -1;
-            }
-
+            int p = Integer.compare(a.getPriority(), b.getPriority());
+            if (p != 0) return p;
+            if (a.isOptional() != b.isOptional()) return a.isOptional() ? 1 : -1;
             return 0;
         });
-
         return sorted;
     }
 
     private static String resolveNameFromAnnotation() {
-
-        StackTraceElement[] stack = Thread.currentThread().getStackTrace();
-
-        try {
-            for (StackTraceElement element : stack) {
-                Class<?> clazz = Class.forName(element.getClassName());
-                if (BaseCommand.class.isAssignableFrom(clazz)
-                        && clazz.isAnnotationPresent(Info.class)) {
-                    return clazz.getAnnotation(Info.class).name();
+        for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
+            try {
+                Class<?> clz = Class.forName(el.getClassName());
+                if (BaseCommand.class.isAssignableFrom(clz) && clz.isAnnotationPresent(Info.class)) {
+                    return clz.getAnnotation(Info.class).name();
                 }
-            }
-        } catch (ClassNotFoundException ignored) {}
-
+            } catch (ClassNotFoundException ignored) {}
+        }
         throw new IllegalStateException("Could not resolve command name. Use @Info or the classic constructor.");
-    }
-
-    private BaseCommand findSubCommand(String input) {
-        if (input == null || input.trim().isEmpty()) {
-            return null;
-        }
-
-        String normalized = input.trim().toLowerCase(Locale.ROOT);
-        for (BaseCommand subCommand : this.subCommands) {
-            if (subCommand == null) {
-                continue;
-            }
-
-            if (subCommand.getName() != null && subCommand.getName().toLowerCase(Locale.ROOT).equals(normalized)) {
-                return subCommand;
-            }
-
-            for (String alias : subCommand.getAliases()) {
-                if (alias != null && alias.toLowerCase(Locale.ROOT).equals(normalized)) {
-                    return subCommand;
-                }
-            }
-        }
-
-        return null;
-    }
-
-    private List<String> getSubCommandNames(String prefix) {
-        String normalizedPrefix = prefix == null ? "" : prefix.trim().toLowerCase(Locale.ROOT);
-        List<String> names = new ArrayList<>();
-
-        for (BaseCommand subCommand : this.subCommands) {
-            if (subCommand == null || subCommand.getName() == null) {
-                continue;
-            }
-
-            String subName = subCommand.getName();
-            if (normalizedPrefix.isEmpty() || subName.toLowerCase(Locale.ROOT).startsWith(normalizedPrefix)) {
-                names.add(subName);
-            }
-
-            for (String alias : subCommand.getAliases()) {
-                if (alias != null && (normalizedPrefix.isEmpty() || alias.toLowerCase(Locale.ROOT).startsWith(normalizedPrefix))) {
-                    names.add(alias);
-                }
-            }
-        }
-
-        return names;
     }
 }

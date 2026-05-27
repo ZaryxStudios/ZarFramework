@@ -5,32 +5,63 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Locale;
 
+/**
+ * Utility for resolving materials and item stacks for menu items.
+ * Handles legacy material names and null-safety.
+ */
 public final class MenuResolver {
 
     private MenuResolver() {}
 
+    /**
+     * Resolve a material name string to a Material constant.
+     * Returns {@link Material#AIR} for null or unrecognized names.
+     */
     public static Material resolve(String name) {
-        if (name == null) return Material.AIR;
+        if (name == null || name.isEmpty()) return Material.AIR;
 
-        name = name.toLowerCase(Locale.ROOT);
+        String normalized = name.toUpperCase(Locale.ROOT).replace(' ', '_');
 
-        Material material = Material.matchMaterial(name);
+        // Try modern name first
+        Material material = Material.matchMaterial(normalized);
         if (material != null) return material;
 
-        material = Material.getMaterial("LEGACY_" + name);
-        if (material != null) return material;
+        // Try legacy name
+        try {
+            Material legacy = Material.getMaterial("LEGACY_" + normalized);
+            if (legacy != null) return legacy;
+        } catch (Exception ignored) {}
 
         return Material.AIR;
     }
 
+    /**
+     * Resolve an ItemStack, ensuring it is never null.
+     * Returns a single AIR item if the input is null.
+     * Clones the input to prevent external mutation.
+     */
     public static ItemStack resolve(ItemStack itemStack) {
         if (itemStack == null) return new ItemStack(Material.AIR);
 
         Material resolved = resolve(itemStack.getType().name());
-
         ItemStack clone = new ItemStack(resolved, itemStack.getAmount());
-        if (itemStack.hasItemMeta()) clone.setItemMeta(itemStack.getItemMeta());
-
+        if (itemStack.hasItemMeta()) {
+            clone.setItemMeta(itemStack.getItemMeta());
+        }
         return clone;
+    }
+
+    /**
+     * Create a basic ItemStack from a Material with amount 1.
+     */
+    public static ItemStack of(Material material) {
+        return material != null ? new ItemStack(material, 1) : new ItemStack(Material.AIR);
+    }
+
+    /**
+     * Create a basic ItemStack from a Material with the specified amount.
+     */
+    public static ItemStack of(Material material, int amount) {
+        return material != null ? new ItemStack(material, amount) : new ItemStack(Material.AIR);
     }
 }
