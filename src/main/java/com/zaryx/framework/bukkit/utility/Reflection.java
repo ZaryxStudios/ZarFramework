@@ -7,8 +7,15 @@ import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * Reflection helpers for resolving NMS, OBC, fields, methods, and packet access across server versions.
+ */
 public final class Reflection {
+
+    private static final Logger LOGGER = Logger.getLogger(Reflection.class.getName());
 
     private static final String NMS_VERSION;
     private static final boolean MODERN;
@@ -40,7 +47,8 @@ public final class Reflection {
             // Store in cache
             classCache.put(clazz, Class.forName(clazz));
             return true;
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Failed to resolve class: " + clazz, e);
             return false;
         }
     }
@@ -57,19 +65,25 @@ public final class Reflection {
                 // Store in cache
                 classCache.put(name, clazz);
                 return clazz;
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.log(Level.FINE, "NMS class not found using direct name: " + name, e);
+            }
 
             try {
                 Class<?> clazz = Class.forName("net.minecraft.server." + NMS_VERSION + "." + name);
                 classCache.put(name, clazz);
                 return clazz;
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.log(Level.FINE, "NMS class not found using versioned name: " + name, e);
+            }
 
             try {
                 Class<?> clazz = Class.forName("net.minecraft.server." + NMS_VERSION + "." + name.replace('$', '.'));
                 classCache.put(name, clazz);
                 return clazz;
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.log(Level.FINE, "NMS class not found using nested-class fallback: " + name, e);
+            }
         }
 
         throw new RuntimeException("NMS class not found: " + Arrays.toString(candidates));
@@ -107,14 +121,18 @@ public final class Reflection {
             Class<?> c = Class.forName(candidate);
             classCache.put(key, c);
             return c;
-        } catch (ClassNotFoundException ignored) {}
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.FINE, "OBC class not found using versioned path: " + candidate, e);
+        }
 
         // Try without version (for some embedded builds)
         try {
             Class<?> c = Class.forName("org.bukkit.craftbukkit." + path);
             classCache.put(key, c);
             return c;
-        } catch (ClassNotFoundException ignored) {}
+        } catch (ClassNotFoundException e) {
+            LOGGER.log(Level.FINE, "OBC class not found using unversioned path: " + path, e);
+        }
 
         throw new RuntimeException("OBC class not found: " + path);
     }
@@ -127,7 +145,9 @@ public final class Reflection {
                 try {
                     c.setAccessible(true);
                     return c.newInstance(args);
-                } catch (Exception ignored) {}
+                } catch (Exception e) {
+                    LOGGER.log(Level.FINE, "Constructor invocation failed for " + clazz.getName(), e);
+                }
             }
         }
         throw new IllegalStateException("Constructor not found: " + clazz.getName());
@@ -221,7 +241,8 @@ public final class Reflection {
                     Field f = clazz.getDeclaredField(field);
                     f.setAccessible(true);
                     return f.get(instance);
-                } catch (NoSuchFieldException ignored) {
+                } catch (NoSuchFieldException e) {
+                    LOGGER.log(Level.FINE, "Field not found on class hierarchy: " + field + " in " + clazz.getName(), e);
                     clazz = clazz.getSuperclass();
                 }
             }

@@ -12,12 +12,16 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Text helpers that remain compatible with legacy and modern server versions.
  * Includes color parsing, placeholder resolution, and messaging utilities.
  */
 public final class Text {
+
+    private static final Logger LOGGER = Logger.getLogger(Text.class.getName());
 
     private Text() {
     }
@@ -121,17 +125,21 @@ public final class Text {
                 Method m = spigot.getClass().getMethod("sendMessage", ChatMessageType.class, net.md_5.bungee.api.chat.BaseComponent[].class);
                 m.invoke(spigot, ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(colored));
                 return;
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.log(Level.FINE, "Spigot action bar signature with ChatMessageType was not available.", e);
+            }
 
             // Try varargs sendMessage(BaseComponent...)
             try {
                 Method m2 = spigot.getClass().getMethod("sendMessage", net.md_5.bungee.api.chat.BaseComponent[].class);
                 m2.invoke(spigot, new Object[]{TextComponent.fromLegacyText(colored)});
                 return;
-            } catch (NoSuchMethodException ignored) {}
+            } catch (NoSuchMethodException e) {
+                LOGGER.log(Level.FINE, "Spigot action bar varargs signature was not available.", e);
+            }
 
-        } catch (Throwable ignored) {
-            // Continue to NMS fallback.
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Spigot action bar delivery failed, falling back to NMS.", e);
         }
 
         try {
@@ -144,7 +152,8 @@ public final class Text {
             Object component = serializer.getMethod("a", String.class).invoke(null, json);
             Object packet = packetClass.getConstructor(iChatBase, byte.class).newInstance(component, (byte) 2);
             Reflection.sendPacket(player, packet);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "NMS action bar delivery failed, falling back to chat.", e);
             player.sendMessage(colored);
         }
     }
@@ -160,7 +169,8 @@ public final class Text {
         try {
             Method sendTitle = player.getClass().getMethod("sendTitle", String.class, String.class, int.class, int.class, int.class);
             sendTitle.invoke(player, t, s, fadeIn, stay, fadeOut);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Title delivery failed, falling back to chat messages.", e);
             if (t.length() > 0) {
                 player.sendMessage(t);
             }

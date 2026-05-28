@@ -14,6 +14,10 @@ import java.util.List;
  */
 public final class PlayerCommandArgument extends CommandArgument<Player> {
 
+    /**
+     * Creates a required player argument.
+     * @param name the argument name
+     */
     public PlayerCommandArgument(String name) {
         super(name);
     }

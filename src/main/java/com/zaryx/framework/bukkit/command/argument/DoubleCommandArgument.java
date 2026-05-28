@@ -16,19 +16,35 @@ public final class DoubleCommandArgument extends CommandArgument<Double> {
     private final double max;
     private static final double UNBOUNDED = Double.NEGATIVE_INFINITY;
 
+    /**
+     * Creates a required double argument with a range constraint.
+     * @param name the argument name
+     * @param min  the minimum value (inclusive)
+     * @param max  the maximum value (inclusive), or {@link #UNBOUNDED} for no upper bound
+     */
     public DoubleCommandArgument(String name, double min, double max) {
         super(name);
         this.min = min;
         this.max = max;
     }
 
+    /**
+     * Creates an optional double argument with a range constraint.
+     * @param name         the argument name
+     * @param optional     whether the argument is optional
+     * @param defaultValue the default value if omitted
+     * @param min          the minimum value (inclusive)
+     * @param max          the maximum value (inclusive), or {@link #UNBOUNDED} for no upper bound
+     */
     public DoubleCommandArgument(String name, boolean optional, Double defaultValue, double min, double max) {
         super(name, optional, defaultValue);
         this.min = min;
         this.max = max;
     }
 
+    /** @return the minimum value (inclusive) */
     public double getMin() { return min; }
+    /** @return the maximum value (inclusive), or {@link #UNBOUNDED} if unbounded */
     public double getMax() { return max; }
 
     @Override

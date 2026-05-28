@@ -138,6 +138,7 @@ public abstract class BaseCommand extends Command {
         try {
             return arg.tabComplete(sender, input);
         } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Tab completion error for argument '" + arg.getName() + "'", e);
             return Collections.emptyList();
         }
     }
@@ -226,6 +227,14 @@ public abstract class BaseCommand extends Command {
 
     // ---- Internal helpers ----
 
+    /**
+     * Checks whether the sender can execute this command.
+     * Validates enabled state, player-only/console-only constraints, and permissions.
+     * Sends a descriptive error message to the sender if the check fails.
+     *
+     * @param sender the command sender to validate
+     * @return true if the sender may execute this command
+     */
     private boolean canExecute(CommandSender sender) {
         if (!enabled) {
             sender.sendMessage("§cThis command is currently disabled.");
@@ -246,11 +255,21 @@ public abstract class BaseCommand extends Command {
         return true;
     }
 
+    /**
+     * Finds a matching sub-command from the first argument, if any.
+     *
+     * @param args the raw command arguments
+     * @return the matching sub-command, or null if none match
+     */
     private BaseCommand findSubCommandFor(String[] args) {
         if (args == null || args.length == 0) return null;
         return findSubCommand(args[0]);
     }
 
+    /**
+     * Applies {@link Info}, {@link Aliases}, and {@link Description} annotations
+     * from the subclass to configure permission, aliases, and description automatically.
+     */
     private void applyAnnotations() {
         Class<?> clz = getClass();
         if (clz.isAnnotationPresent(Info.class)) {
@@ -268,6 +287,12 @@ public abstract class BaseCommand extends Command {
         }
     }
 
+    /**
+     * Sorts arguments by priority (ascending), then by required-before-optional.
+     *
+     * @param original the unsorted argument list
+     * @return a new sorted list
+     */
     private static List<CommandArgument<?>> sortArguments(List<CommandArgument<?>> original) {
         List<CommandArgument<?>> sorted = new ArrayList<>(original);
         sorted.sort((a, b) -> {
@@ -279,6 +304,13 @@ public abstract class BaseCommand extends Command {
         return sorted;
     }
 
+    /**
+     * Resolves the command name from the {@link Info} annotation on the subclass.
+     * Walks the call stack to find the direct subclass that carries the annotation.
+     *
+     * @return the command name from the annotation
+     * @throws IllegalStateException if no {@code @Info} annotation is found
+     */
     private static String resolveNameFromAnnotation() {
         for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
             try {
@@ -286,7 +318,9 @@ public abstract class BaseCommand extends Command {
                 if (BaseCommand.class.isAssignableFrom(clz) && clz.isAnnotationPresent(Info.class)) {
                     return clz.getAnnotation(Info.class).name();
                 }
-            } catch (ClassNotFoundException ignored) {}
+            } catch (ClassNotFoundException e) {
+                LOGGER.log(Level.FINE, "Could not resolve class from stack trace: " + el.getClassName(), e);
+            }
         }
         throw new IllegalStateException("Could not resolve command name. Use @Info or the classic constructor.");
     }

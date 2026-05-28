@@ -24,25 +24,45 @@ public final class TimeCommandArgument extends CommandArgument<Long> {
     private final long minMillis;
     private final long maxMillis;
 
+    /**
+     * Creates a required time argument with no range constraint.
+     * @param name the argument name
+     */
     public TimeCommandArgument(String name) {
         super(name);
         this.minMillis = 0;
         this.maxMillis = 0;
     }
 
+    /**
+     * Creates an optional time argument with a default value and no range constraint.
+     * @param name         the argument name
+     * @param optional     whether the argument is optional
+     * @param defaultValue the default time string (e.g. "30s")
+     */
     public TimeCommandArgument(String name, boolean optional, String defaultValue) {
         super(name, optional, defaultValue != null ? parseInternal(defaultValue) : null);
         this.minMillis = 0;
         this.maxMillis = 0;
     }
 
+    /**
+     * Creates an optional time argument with a default value and range constraints.
+     * @param name         the argument name
+     * @param optional     whether the argument is optional
+     * @param defaultValue the default time string (e.g. "30s")
+     * @param minMillis    the minimum allowed time string (e.g. "5s"), or null for no minimum
+     * @param maxMillis    the maximum allowed time string (e.g. "1h"), or null for no maximum
+     */
     public TimeCommandArgument(String name, boolean optional, String defaultValue, String minMillis, String maxMillis) {
         super(name, optional, defaultValue != null ? parseInternal(defaultValue) : null);
         this.minMillis = minMillis != null ? parseInternal(minMillis) : 0;
         this.maxMillis = maxMillis != null ? parseInternal(maxMillis) : 0;
     }
 
+    /** @return the minimum allowed time in milliseconds, or 0 if unbounded */
     public long getMinMillis() { return minMillis; }
+    /** @return the maximum allowed time in milliseconds, or 0 if unbounded */
     public long getMaxMillis() { return maxMillis; }
 
     @Override

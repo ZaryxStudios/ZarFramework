@@ -6,11 +6,15 @@ import org.bukkit.inventory.meta.SkullMeta;
 
 import java.lang.reflect.Field;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Skull utilities with legacy-safe owner handling.
  */
 public final class SkullHandler {
+
+    private static final Logger LOGGER = Logger.getLogger(SkullHandler.class.getName());
 
     private SkullHandler() {
     }
@@ -29,7 +33,8 @@ public final class SkullHandler {
         try {
             meta.setOwner(playerName);
             skull.setItemMeta(meta);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Failed to set skull owner through the legacy API.", e);
         }
         return skull;
     }
@@ -61,7 +66,8 @@ public final class SkullHandler {
             profileField.setAccessible(true);
             profileField.set(meta, profile);
             skull.setItemMeta(meta);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Failed to apply a custom skull texture.", e);
         }
 
         return skull;

@@ -12,8 +12,15 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * Provides formatting, placeholder resolution, and message delivery utilities for the framework.
+ */
 public class MessageService {
+
+    private static final Logger LOGGER = Logger.getLogger(MessageService.class.getName());
 
     private final Map<String, Map<String, String>> translations = new ConcurrentHashMap<String, Map<String, String>>();
     private volatile String defaultLocale = "en_US";
@@ -104,7 +111,8 @@ public class MessageService {
             Object components = fromLegacyText.invoke(null, formatted);
             Method sendMessage = spigot.getClass().getMethod("sendMessage", chatMessageType, Class.forName("net.md_5.bungee.api.chat.BaseComponent[]"));
             sendMessage.invoke(spigot, actionBar, components);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Failed to send action bar through the Spigot API, falling back to chat.", e);
             player.sendMessage(formatted);
         }
     }
@@ -120,7 +128,8 @@ public class MessageService {
         try {
             Method sendTitle = player.getClass().getMethod("sendTitle", String.class, String.class, int.class, int.class, int.class);
             sendTitle.invoke(player, formattedTitle, formattedSubtitle, fadeIn, stay, fadeOut);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Failed to send title through the player API, falling back to chat messages.", e);
             if (!formattedTitle.isEmpty()) {
                 player.sendMessage(formattedTitle);
             }

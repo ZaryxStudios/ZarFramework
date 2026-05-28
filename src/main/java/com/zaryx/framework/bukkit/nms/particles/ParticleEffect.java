@@ -5,11 +5,15 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Particle abstraction that works on legacy (Effect) and modern (Particle API) servers.
  */
 public class ParticleEffect {
+
+    private static final Logger LOGGER = Logger.getLogger(ParticleEffect.class.getName());
 
     private final String particleName;
     private final int count;
@@ -67,7 +71,8 @@ public class ParticleEffect {
                 method.invoke(location.getWorld(), particleEnum, location, count, (double) offsetX, (double) offsetY, (double) offsetZ);
             }
             return true;
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to spawn particle " + particleName, t);
             return false;
         }
     }

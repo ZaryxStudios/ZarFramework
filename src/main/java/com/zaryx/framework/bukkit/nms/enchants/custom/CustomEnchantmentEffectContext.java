@@ -13,8 +13,15 @@ import org.bukkit.potion.PotionEffectType;
 
 import java.lang.reflect.Method;
 import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/**
+ * Holds mutable effect state for a custom enchantment's active application.
+ */
 public class CustomEnchantmentEffectContext {
+
+    private static final Logger LOGGER = Logger.getLogger(CustomEnchantmentEffectContext.class.getName());
 
     private final CustomEnchantment enchantment;
     private final int level;
@@ -159,13 +166,15 @@ public class CustomEnchantmentEffectContext {
             Method method = world.getClass().getMethod("spawnParticle", particleClass, Location.class, int.class, double.class, double.class, double.class, double.class);
             method.invoke(world, particle, location, Integer.valueOf(Math.max(1, count)), offsetX, offsetY, offsetZ, extra);
             return;
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Modern particle spawn failed for " + enchantment.getKey(), t);
         }
 
         try {
             Effect effect = Effect.valueOf(particleName.trim().toUpperCase(Locale.ROOT));
             world.playEffect(location, effect, 0);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Legacy effect fallback failed for " + enchantment.getKey(), t);
         }
     }
 
@@ -183,7 +192,8 @@ public class CustomEnchantmentEffectContext {
         try {
             Sound sound = Sound.valueOf(soundName.trim().toUpperCase(Locale.ROOT));
             world.playSound(location, sound, volume, pitch);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to play sound " + soundName, t);
         }
     }
 
@@ -213,7 +223,8 @@ public class CustomEnchantmentEffectContext {
         Player player = (Player) wearer;
         try {
             player.setVelocity(player.getVelocity().multiply(multiplier));
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to boost velocity for " + player.getName(), t);
         }
     }
 
@@ -226,7 +237,8 @@ public class CustomEnchantmentEffectContext {
         try {
             float speed = Math.max(0.0F, Math.min(1.0F, baseSpeed * (float) flySpeedMultiplier));
             player.setFlySpeed(speed);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to set fly speed for " + player.getName(), t);
         }
     }
 

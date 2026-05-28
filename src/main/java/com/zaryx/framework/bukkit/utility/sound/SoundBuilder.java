@@ -6,11 +6,15 @@ import org.bukkit.Sound;
 import org.bukkit.entity.Player;
 
 import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Fluent sound utility with legacy-safe fallbacks.
  */
 public class SoundBuilder {
+
+    private static final Logger LOGGER = Logger.getLogger(SoundBuilder.class.getName());
 
     private Sound sound = resolveSound("CLICK", "UI_BUTTON_CLICK");
     private float volume = 1.0f;
@@ -121,7 +125,8 @@ public class SoundBuilder {
                 method.invoke(target, location, sound, enumValue, volume, pitch);
             }
             return true;
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to play sound with category", t);
             return false;
         }
     }

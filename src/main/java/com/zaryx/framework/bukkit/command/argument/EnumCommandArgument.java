@@ -16,11 +16,17 @@ public final class EnumCommandArgument<T extends Enum<T>> extends CommandArgumen
 
     private final Class<T> enumClass;
 
+    /**
+     * Creates a required enum argument.
+     * @param name      the argument name
+     * @param enumClass the enum class to parse values from
+     */
     public EnumCommandArgument(String name, Class<T> enumClass) {
         super(name);
         this.enumClass = enumClass;
     }
 
+    /** @return the enum class used for parsing */
     public Class<T> getEnumClass() { return enumClass; }
 
     @Override

@@ -16,12 +16,16 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Data conversion utilities (ItemStack serialization, etc).
  * For text coloring, use Text utility.
  */
 public final class Convert {
+
+    private static final Logger LOGGER = Logger.getLogger(Convert.class.getName());
 
     private Convert() {}
 
@@ -77,7 +81,7 @@ public final class Convert {
                 }
 
                 // close if possible
-                try { bosClass.getMethod("close").invoke(bos); } catch (Throwable ignored) {}
+                try { bosClass.getMethod("close").invoke(bos); } catch (Throwable t) { LOGGER.log(Level.FINE, "Failed to close BukkitObjectOutputStream", t); }
 
                 return Base64Coder.encodeLines(outputStream.toByteArray());
             }
@@ -125,7 +129,7 @@ public final class Convert {
                     items[i] = (ItemStack) obj;
                 }
 
-                try { bisClass.getMethod("close").invoke(bis); } catch (Throwable ignored) {}
+                try { bisClass.getMethod("close").invoke(bis); } catch (Throwable t) { LOGGER.log(Level.FINE, "Failed to close BukkitObjectInputStream", t); }
                 return items;
             }
         } catch (ClassNotFoundException cnf) {

@@ -4,11 +4,18 @@ import net.md_5.bungee.api.ChatColor;
 
 import java.awt.Color;
 import java.lang.reflect.Method;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+/**
+ * Parses color tags, gradients, rainbows, and hex colors into legacy Minecraft color codes.
+ */
 public final class ColorParser {
+
+    private static final Logger LOGGER = Logger.getLogger(ColorParser.class.getName());
 
     private static final Pattern HEX_PATTERN = Pattern.compile("&#([A-Fa-f0-9]{6})");
     private static final Pattern BRACKET_HEX_PATTERN = Pattern.compile("<#([A-Fa-f0-9]{6})>");
@@ -26,6 +33,7 @@ public final class ColorParser {
             bungeeOffMethod = chatColor.getMethod("of", String.class);
             hexSupported = true;
         } catch (Exception e) {
+            LOGGER.log(Level.FINE, "Hex colors are not supported by the current ChatColor implementation.", e);
             hexSupported = false;
         }
     }
@@ -165,8 +173,8 @@ public final class ColorParser {
             try {
                 Object color = bungeeOffMethod.invoke(null, clean);
                 return String.valueOf(color);
-            } catch (Exception ignored) {
-                // Fall through to legacy approximation.
+            } catch (Exception e) {
+                LOGGER.log(Level.FINE, "Failed to resolve hex color token, falling back to the nearest legacy color.", e);
             }
         }
 

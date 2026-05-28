@@ -10,11 +10,15 @@ import com.zaryx.framework.bukkit.FrameworkPlugin;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Unified cross-version sound manager (modified to use SoundManager volume multipliers).
  */
 public class NmsSound {
+
+    private static final Logger LOGGER = Logger.getLogger(NmsSound.class.getName());
 
     private final String soundName;
     private final Sound bukkitSound;
@@ -121,7 +125,9 @@ public class NmsSound {
         try {
             Method stopSound = player.getClass().getMethod("stopSound", Sound.class);
             stopSound.invoke(player, bukkitSound);
-        } catch (Throwable ignored) {}
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to stop sound for " + player.getName(), t);
+        }
     }
 
     public void stop(Player player, String cat) {
@@ -131,7 +137,8 @@ public class NmsSound {
             Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class), cat == null ? "MASTER" : cat.toUpperCase());
             Method stopSound = player.getClass().getMethod("stopSound", Sound.class, categoryEnum);
             stopSound.invoke(player, bukkitSound, enumValue);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to stop sound with category for " + player.getName(), t);
             stop(player);
         }
     }
@@ -192,7 +199,8 @@ public class NmsSound {
                 worldPlay.invoke(location.getWorld(), location, bukkitSound, enumValue, effectiveVolume, pitch);
             }
             return true;
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to play sound with category", t);
             return false;
         }
     }

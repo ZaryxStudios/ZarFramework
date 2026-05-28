@@ -11,11 +11,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Category abstraction that works even when SoundCategory does not exist.
  */
 public class SoundCategoryManager {
+
+    private static final Logger LOGGER = Logger.getLogger(SoundCategoryManager.class.getName());
 
     private static final Map<UUID, Float> PLAYER_VOLUMES = new HashMap<UUID, Float>();
     private final String category;
@@ -45,7 +49,8 @@ public class SoundCategoryManager {
             Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class), category);
             Method setVolume = player.getClass().getMethod("setVolume", categoryEnum, float.class);
             setVolume.invoke(player, enumValue, normalized);
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Sound category volume is not supported on this server API.", e);
         }
     }
 
@@ -78,7 +83,8 @@ public class SoundCategoryManager {
                 names.add(String.valueOf(value));
             }
             return names;
-        } catch (Throwable ignored) {
+        } catch (Throwable e) {
+            LOGGER.log(Level.FINE, "Sound categories are not available on this server API.", e);
             return Collections.singleton("MASTER");
         }
     }

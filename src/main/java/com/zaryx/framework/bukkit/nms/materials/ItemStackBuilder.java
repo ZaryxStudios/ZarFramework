@@ -16,11 +16,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * ItemStack builder with reflection guards for modern-only features.
  */
 public class ItemStackBuilder {
+
+    private static final Logger LOGGER = Logger.getLogger(ItemStackBuilder.class.getName());
 
     private Material material = Material.STONE;
     private int amount = 1;
@@ -163,21 +167,27 @@ public class ItemStackBuilder {
             Method setUnbreakable = spigotMeta.getClass().getMethod("setUnbreakable", boolean.class);
             setUnbreakable.invoke(spigotMeta, value);
             return;
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Spigot setUnbreakable failed, falling back to standard", t);
         }
 
         try {
             Method setUnbreakable = meta.getClass().getMethod("setUnbreakable", boolean.class);
             setUnbreakable.invoke(meta, value);
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Standard setUnbreakable failed", t);
         }
     }
 
+    /**
+     * Applies custom model data via reflection with silent fallback.
+     */
     private static void applyCustomModelData(ItemMeta meta, int value) {
         try {
             Method setCustomModelData = meta.getClass().getMethod("setCustomModelData", Integer.class);
             setCustomModelData.invoke(meta, Integer.valueOf(value));
-        } catch (Throwable ignored) {
+        } catch (Throwable t) {
+            LOGGER.log(Level.FINE, "Failed to set custom model data", t);
         }
     }
 }
