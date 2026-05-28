@@ -1,4 +1,4 @@
-name: ZarFramework
+name: Okaso
 version: ${project.version}
-main: com.zaryx.framework.bungee.FrameworkBungee
+main: com.zaryx.okaso.bungee.OkasoBungee
 author: Escaner

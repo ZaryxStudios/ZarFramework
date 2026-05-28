@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.zaryx.framework</groupId>
-    <artifactId>zarframework</artifactId>
+    <groupId>com.zaryx</groupId>
+    <artifactId>okaso</artifactId>
     <version>2.2.0-ALPHA2</version>
     <packaging>jar</packaging>
 
-    <name>ZarFramework</name>
+    <name>Okaso</name>
     <description>Modular Bukkit/Spigot Framework for Minecraft Plugins</description>
 
     <properties>

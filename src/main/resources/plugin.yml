@@ -1,4 +1,4 @@
-name: ZarFramework
+name: Okaso
 version: ${project.version}
-main: com.zaryx.framework.bukkit.FrameworkPlugin
+main: com.zaryx.okaso.bukkit.OkasoPlugin
 author: Escaner
