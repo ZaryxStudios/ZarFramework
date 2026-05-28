@@ -111,15 +111,15 @@
                             <relocations>
                                 <relocation>
                                     <pattern>com.google.gson</pattern>
-                                    <shadedPattern>com.zaryx.framework.shade.gson</shadedPattern>
+                                    <shadedPattern>com.zaryx.okaso.shade.gson</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>com.mongodb</pattern>
-                                    <shadedPattern>com.zaryx.framework.shade.mongodb</shadedPattern>
+                                    <shadedPattern>com.zaryx.okaso.shade.mongodb</shadedPattern>
                                 </relocation>
                                 <relocation>
                                     <pattern>org.bson</pattern>
-                                    <shadedPattern>com.zaryx.framework.shade.bson</shadedPattern>
+                                    <shadedPattern>com.zaryx.okaso.shade.bson</shadedPattern>
                                 </relocation>
                             </relocations>
                             <filters>
@@ -147,7 +147,7 @@
                     <archive>
                         <manifest>
                             <addClasspath>true</addClasspath>
-                            <mainClass>com.zaryx.framework.bukkit.FrameworkPlugin</mainClass>
+                            <mainClass>com.zaryx.okaso.bukkit.OkasoPlugin</mainClass>
                         </manifest>
                     </archive>
                 </configuration>
@@ -176,20 +176,20 @@
         </plugins>
     </build>
     <scm>
-        <connection>scm:git:git://github.com/zaryxstudios/zarframework.git</connection>
-        <developerConnection>scm:git:ssh://github.com:zaryxstudios/zarframework.git</developerConnection>
-        <url>https://github.com/zaryxstudios/zarframework/tree/main</url>
+        <connection>scm:git:git://github.com/zaryxstudios/okaso.git</connection>
+        <developerConnection>scm:git:ssh://github.com:zaryxstudios/okaso.git</developerConnection>
+        <url>https://github.com/zaryxstudios/okaso/tree/main</url>
     </scm>
     <distributionManagement>
         <repository>
             <id>github</id>
             <name>GitHub Packages Releases</name>
-            <url>https://maven.pkg.github.com/zaryxstudios/zarframework</url>
+            <url>https://maven.pkg.github.com/zaryxstudios/okaso</url>
         </repository>
         <snapshotRepository>
             <id>github</id>
             <name>GitHub Packages Snapshots</name>
-            <url>https://maven.pkg.github.com/zaryxstudios/zarframework</url>
+            <url>https://maven.pkg.github.com/zaryxstudios/okaso</url>
         </snapshotRepository>
     </distributionManagement>
 </project>
