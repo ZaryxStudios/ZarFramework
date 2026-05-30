@@ -7,25 +7,12 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A command argument that parses a boolean (true/false, yes/no).
- */
 public final class BooleanCommandArgument extends CommandArgument<Boolean> {
 
-    /**
-     * Creates a required boolean argument.
-     * @param name the argument name
-     */
     public BooleanCommandArgument(String name) {
         super(name);
     }
 
-    /**
-     * Creates an optional boolean argument with a default value.
-     * @param name         the argument name
-     * @param optional     whether the argument is optional
-     * @param defaultValue the default value if omitted
-     */
     public BooleanCommandArgument(String name, boolean optional, Boolean defaultValue) {
         super(name, optional, defaultValue);
     }

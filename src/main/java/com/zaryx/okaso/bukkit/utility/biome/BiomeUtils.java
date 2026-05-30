@@ -3,14 +3,8 @@ package com.zaryx.okaso.bukkit.utility.biome;
 import org.bukkit.block.Biome;
 import org.bukkit.entity.Player;
 
-/**
- * Biome utilities and helpers.
- */
 public class BiomeUtils {
 
-    /**
-     * Get biome temperature category.
-     */
     public static TemperatureCategory getTemperature(Biome biome) {
         if (biome == null) return TemperatureCategory.NEUTRAL;
 
@@ -44,47 +38,29 @@ public class BiomeUtils {
         return TemperatureCategory.NEUTRAL;
     }
 
-    /**
-     * Check if biome is aquatic.
-     */
     public static boolean isAquatic(Biome biome) {
         BiomeFamily family = getFamily(biome);
         return family == BiomeFamily.AQUATIC || family == BiomeFamily.SWAMP;
     }
 
-    /**
-     * Check if biome is forested.
-     */
     public static boolean isForested(Biome biome) {
         BiomeFamily family = getFamily(biome);
         return family == BiomeFamily.FOREST || family == BiomeFamily.JUNGLE;
     }
 
-    /**
-     * Check if biome is mountainous.
-     */
     public static boolean isMountainous(Biome biome) {
         BiomeFamily family = getFamily(biome);
         return family == BiomeFamily.MOUNTAIN;
     }
 
-    /**
-     * Check if biome is a plains variant.
-     */
     public static boolean isPlains(Biome biome) {
         return getFamily(biome) == BiomeFamily.PLAINS;
     }
 
-    /**
-     * Get player biome.
-     */
     public static Biome getPlayerBiome(Player player) {
         return player.getLocation().getBlock().getBiome();
     }
 
-    /**
-     * Get formatted biome name.
-     */
     public static String getDisplayName(Biome biome) {
         if (biome == null) return "Unknown";
 
@@ -100,9 +76,6 @@ public class BiomeUtils {
         return result.toString().trim();
     }
 
-    /**
-     * Get biome family classification.
-     */
     public static BiomeFamily getFamily(Biome biome) {
         if (biome == null) return BiomeFamily.OTHER;
 

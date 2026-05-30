@@ -18,17 +18,6 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Base command class with annotation support, sub-command routing, and argument parsing.
- * Extend this to create okaso commands.
- *
- * <p>Lifecycle:
- * <ol>
- *   <li>Constructor resolves name from {@code @Info} annotation or parameter</li>
- *   <li>{@link #execute(CommandContext)} is called on the main thread after argument validation</li>
- *   <li>Sub-commands are routed automatically based on the first argument</li>
- * </ol>
- */
 public abstract class BaseCommand extends Command {
 
     private static final Logger LOGGER = Logger.getLogger(BaseCommand.class.getName());
@@ -41,12 +30,6 @@ public abstract class BaseCommand extends Command {
     private final List<BaseCommand> subCommands;
     private final List<CommandArgument<?>> commandArguments;
 
-    // ---- Constructors ----
-
-    /**
-     * Construct a command using the {@code @Info} annotation to resolve the name.
-     * @throws IllegalStateException if no {@code @Info} annotation is found on the subclass
-     */
     protected BaseCommand() {
         super(resolveNameFromAnnotation());
         this.enabled = true;
@@ -55,17 +38,12 @@ public abstract class BaseCommand extends Command {
         applyAnnotations();
     }
 
-    /**
-     * Construct a command with an explicit name.
-     */
     protected BaseCommand(String name) {
         super(name);
         this.enabled = true;
         this.subCommands = new ArrayList<>();
         this.commandArguments = Collections.unmodifiableList(sortArguments(this.arguments()));
     }
-
-    // ---- Getters / Setters ----
 
     public boolean isEnabled() { return enabled; }
     public void setEnabled(boolean enabled) { this.enabled = enabled; }
@@ -81,8 +59,6 @@ public abstract class BaseCommand extends Command {
 
     public List<BaseCommand> getSubCommands() { return Collections.unmodifiableList(subCommands); }
     public List<CommandArgument<?>> getCommandArguments() { return commandArguments; }
-
-    // ---- Execution ----
 
     @Override
     public final boolean execute(CommandSender sender, String label, String[] args) {
@@ -143,19 +119,8 @@ public abstract class BaseCommand extends Command {
         }
     }
 
-    /**
-     * Override this method with your command logic.
-     * Called on the main thread after argument validation.
-     */
     public abstract void execute(CommandContext ctx);
 
-    // ---- Context building ----
-
-    /**
-     * Build a CommandContext from the sender and raw arguments.
-     * Validates and parses each declared argument.
-     * @throws IllegalArgumentException if validation fails or required arguments are missing
-     */
     protected CommandContext buildContext(CommandSender sender, String[] inputArgs) {
         String[] args = (inputArgs != null) ? inputArgs : new String[0];
 
@@ -186,13 +151,9 @@ public abstract class BaseCommand extends Command {
         return ctx;
     }
 
-    // ---- Arguments (override in subclass) ----
-
     protected List<CommandArgument<?>> arguments() {
         return Collections.emptyList();
     }
-
-    // ---- Sub-commands ----
 
     public void addSubCommand(BaseCommand sub) {
         if (sub != null) subCommands.add(sub);
@@ -225,16 +186,6 @@ public abstract class BaseCommand extends Command {
         return names;
     }
 
-    // ---- Internal helpers ----
-
-    /**
-     * Checks whether the sender can execute this command.
-     * Validates enabled state, player-only/console-only constraints, and permissions.
-     * Sends a descriptive error message to the sender if the check fails.
-     *
-     * @param sender the command sender to validate
-     * @return true if the sender may execute this command
-     */
     private boolean canExecute(CommandSender sender) {
         if (!enabled) {
             sender.sendMessage("§cThis command is currently disabled.");
@@ -255,21 +206,11 @@ public abstract class BaseCommand extends Command {
         return true;
     }
 
-    /**
-     * Finds a matching sub-command from the first argument, if any.
-     *
-     * @param args the raw command arguments
-     * @return the matching sub-command, or null if none match
-     */
     private BaseCommand findSubCommandFor(String[] args) {
         if (args == null || args.length == 0) return null;
         return findSubCommand(args[0]);
     }
 
-    /**
-     * Applies {@link Info}, {@link Aliases}, and {@link Description} annotations
-     * from the subclass to configure permission, aliases, and description automatically.
-     */
     private void applyAnnotations() {
         Class<?> clz = getClass();
         if (clz.isAnnotationPresent(Info.class)) {
@@ -287,12 +228,6 @@ public abstract class BaseCommand extends Command {
         }
     }
 
-    /**
-     * Sorts arguments by priority (ascending), then by required-before-optional.
-     *
-     * @param original the unsorted argument list
-     * @return a new sorted list
-     */
     private static List<CommandArgument<?>> sortArguments(List<CommandArgument<?>> original) {
         List<CommandArgument<?>> sorted = new ArrayList<>(original);
         sorted.sort((a, b) -> {
@@ -304,13 +239,6 @@ public abstract class BaseCommand extends Command {
         return sorted;
     }
 
-    /**
-     * Resolves the command name from the {@link Info} annotation on the subclass.
-     * Walks the call stack to find the direct subclass that carries the annotation.
-     *
-     * @return the command name from the annotation
-     * @throws IllegalStateException if no {@code @Info} annotation is found
-     */
     private static String resolveNameFromAnnotation() {
         for (StackTraceElement el : Thread.currentThread().getStackTrace()) {
             try {

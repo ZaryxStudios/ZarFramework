@@ -5,10 +5,6 @@ import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Enhanced EventBus with asynchronous event support.
- * Optimized for use as a dependency.
- */
 public class EventBusAsync {
 
     private final Logger logger;
@@ -25,9 +21,6 @@ public class EventBusAsync {
         this.eventCounter = 0;
     }
 
-    /**
-     * Registers a listener for an event type
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void subscribe(Class<E> eventType, EventListener<E> listener) {
         if (eventType == null || listener == null) {
@@ -39,9 +32,6 @@ public class EventBusAsync {
                 .add((EventListener) listener);
     }
 
-    /**
-     * Unregisters a listener
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void unsubscribe(Class<E> eventType, EventListener<E> listener) {
         List<EventListener> eventListeners = listeners.get(eventType);
@@ -50,16 +40,10 @@ public class EventBusAsync {
         }
     }
 
-    /**
-     * Publishes an event synchronously
-     */
     public <E extends FrameworkEvent> void publish(E event) {
         publishSync(event);
     }
 
-    /**
-     * Publishes an event synchronously
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void publishSync(E event) {
         if (event == null) {
@@ -80,9 +64,6 @@ public class EventBusAsync {
         }
     }
 
-    /**
-     * Publishes an event asynchronously
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void publishAsync(E event) {
         if (event == null) {
@@ -91,7 +72,7 @@ public class EventBusAsync {
         }
 
         if (!asyncEnabled || executorService == null || executorService.isShutdown()) {
-            // Fallback to synchronous mode
+
             publishSync(event);
             return;
         }
@@ -111,9 +92,6 @@ public class EventBusAsync {
         }
     }
 
-    /**
-     * Publishes an event asynchronously with a callback
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void publishAsyncWithCallback(E event, Runnable callback) {
         if (event == null) {
@@ -151,46 +129,28 @@ public class EventBusAsync {
         }
     }
 
-    /**
-     * Returns the number of published events
-     */
     public int getEventCount() {
         return eventCounter;
     }
 
-    /**
-     * Returns the number of registered listeners
-     */
     public int getListenerCount() {
         return listeners.values().stream().mapToInt(List::size).sum();
     }
 
-    /**
-     * Returns listeners for an event type
-     */
     public int getListenerCount(Class<?> eventType) {
         List<EventListener> list = listeners.get(eventType);
         return list != null ? list.size() : 0;
     }
 
-    /**
-     * Clears all listeners
-     */
     public void clear() {
         listeners.clear();
     }
 
-    /**
-     * Interface for event listeners
-     */
     @FunctionalInterface
     public interface EventListener<E extends FrameworkEvent> {
         void onEvent(E event);
     }
 
-    /**
-     * Base class for all okaso events
-     */
     public static abstract class FrameworkEvent {
         private final long timestamp;
         private final String source;
@@ -216,9 +176,6 @@ public class EventBusAsync {
         }
     }
 
-    /**
-     * Atomic integer for thread-safe counters
-     */
     private static class AtomicInteger {
         private volatile int value;
 

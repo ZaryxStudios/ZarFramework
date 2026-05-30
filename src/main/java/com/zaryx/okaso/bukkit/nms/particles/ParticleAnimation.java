@@ -5,9 +5,6 @@ import org.bukkit.Location;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Particle animation sequences.
- */
 public class ParticleAnimation {
 
     private final List<ParticleKeyframe> keyframes = new ArrayList<>();
@@ -34,9 +31,6 @@ public class ParticleAnimation {
         return this;
     }
 
-    /**
-     * Play the animation at location.
-     */
     public void play(Location location) {
         int totalTicks = keyframes.isEmpty() ? 0 : keyframes.get(keyframes.size() - 1).tick;
         int iterations = loop ? Integer.MAX_VALUE : repeatCount;
@@ -60,9 +54,6 @@ public class ParticleAnimation {
         );
     }
 
-    /**
-     * Create a spiral animation.
-     */
     public static ParticleAnimation spiral(ParticleEffect particle, int height, int radius, int duration) {
         ParticleAnimation animation = new ParticleAnimation();
         int steps = 20;
@@ -81,9 +72,6 @@ public class ParticleAnimation {
         return animation;
     }
 
-    /**
-     * Create a pulse animation.
-     */
     public static ParticleAnimation pulse(ParticleEffect particle, int count, int duration) {
         ParticleAnimation animation = new ParticleAnimation();
         int tickStep = duration / count;
@@ -96,9 +84,6 @@ public class ParticleAnimation {
         return animation;
     }
 
-    /**
-     * Create a ring animation.
-     */
     public static ParticleAnimation ring(ParticleEffect particle, int radius, int particles) {
         ParticleAnimation animation = new ParticleAnimation();
 
@@ -113,9 +98,6 @@ public class ParticleAnimation {
         return animation;
     }
 
-    /**
-     * Create a fountain animation.
-     */
     public static ParticleAnimation fountain(ParticleEffect particle, int height, int particles) {
         ParticleAnimation animation = new ParticleAnimation();
 

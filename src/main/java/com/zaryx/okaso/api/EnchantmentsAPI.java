@@ -6,9 +6,6 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.Map;
 
-/**
- * Public API facade for applying enchantments in a version-agnostic way.
- */
 public final class EnchantmentsAPI {
 
     private EnchantmentsAPI() {}

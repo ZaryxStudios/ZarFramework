@@ -14,9 +14,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Category abstraction that works even when SoundCategory does not exist.
- */
 public class SoundCategoryManager {
 
     private static final Logger LOGGER = Logger.getLogger(SoundCategoryManager.class.getName());
@@ -43,7 +40,6 @@ public class SoundCategoryManager {
         float normalized = Math.max(0.0f, Math.min(1.0f, volume));
         PLAYER_VOLUMES.put(player.getUniqueId(), normalized);
 
-        // Player#setVolume(category, x) does not exist on old APIs and is optional.
         try {
             Class<?> categoryEnum = Class.forName("org.bukkit.SoundCategory");
             Object enumValue = Enum.valueOf((Class<Enum>) categoryEnum.asSubclass(Enum.class), category);

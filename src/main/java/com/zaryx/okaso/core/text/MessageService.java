@@ -15,9 +15,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Provides formatting, placeholder resolution, and message delivery utilities for the okaso.
- */
 public class MessageService {
 
     private static final Logger LOGGER = Logger.getLogger(MessageService.class.getName());
@@ -25,14 +22,17 @@ public class MessageService {
     private final Map<String, Map<String, String>> translations = new ConcurrentHashMap<String, Map<String, String>>();
     private volatile String defaultLocale = "en_US";
 
+    // Applies color formatting to a raw message.
     public String format(String message) {
         return ColorParser.parse(message);
     }
 
+    // Applies placeholders first, then color formatting.
     public String format(String message, PlaceholderContext context) {
         return format(PlaceholderResolver.apply(message, context));
     }
 
+    // Sends a formatted message to any command sender.
     public void send(CommandSender sender, String message) {
         if (sender == null || message == null) {
             return;
@@ -61,6 +61,7 @@ public class MessageService {
         player.sendMessage(format(message, context));
     }
 
+    // Sends each line one by one so formatting stays consistent.
     public void sendLines(CommandSender sender, Collection<String> lines) {
         if (sender == null || lines == null) {
             return;
@@ -70,6 +71,7 @@ public class MessageService {
         }
     }
 
+    // Broadcasts the same formatted message to every online player.
     public void broadcast(String message) {
         if (message == null) {
             return;
@@ -84,6 +86,7 @@ public class MessageService {
         Bukkit.broadcastMessage(format(message, context));
     }
 
+    // Uses Spigot's action bar API when available, with chat fallback.
     public void sendActionBar(Player player, String message) {
         if (player == null || message == null) {
             return;
@@ -117,6 +120,7 @@ public class MessageService {
         }
     }
 
+    // Uses the player title API and falls back to chat if needed.
     public void sendTitle(Player player, String title, String subtitle, int fadeIn, int stay, int fadeOut) {
         if (player == null) {
             return;
@@ -139,6 +143,7 @@ public class MessageService {
         }
     }
 
+    // Prefixes the text before routing it through the normal sender flow.
     public void sendPrefixed(CommandSender sender, String prefix, String message) {
         if (sender == null || message == null) {
             return;
@@ -146,6 +151,7 @@ public class MessageService {
         send(sender, prefix + message);
     }
 
+    // Sets the locale used by register() and translate().
     public void setDefaultLocale(String defaultLocale) {
         if (defaultLocale == null || defaultLocale.trim().isEmpty()) {
             return;
@@ -158,10 +164,12 @@ public class MessageService {
         return defaultLocale;
     }
 
+    // Registers a message in the default locale.
     public void register(String key, String message) {
         register(defaultLocale, key, message);
     }
 
+    // Registers a message bundle for a specific locale.
     public void register(String locale, String key, String message) {
         String normalizedLocale = normalizeLocale(locale);
         String normalizedKey = normalizeKey(key);
@@ -182,6 +190,7 @@ public class MessageService {
         bundle.put(normalizedKey, message);
     }
 
+    // Registers all messages from the provided map.
     public void register(String locale, Map<String, String> messages) {
         String normalizedLocale = normalizeLocale(locale);
         if (normalizedLocale == null || messages == null || messages.isEmpty()) {
@@ -193,6 +202,7 @@ public class MessageService {
         }
     }
 
+    // Returns an immutable view of the locale bundle.
     public Map<String, String> getTranslations(String locale) {
         String normalizedLocale = normalizeLocale(locale);
         if (normalizedLocale == null) {
@@ -207,6 +217,7 @@ public class MessageService {
         return Collections.unmodifiableMap(bundle);
     }
 
+    // Translates using the default locale.
     public String translate(String key) {
         return translate(defaultLocale, key, null);
     }

@@ -1,9 +1,5 @@
 package com.zaryx.okaso.api;
 
-/**
- * Okaso statistics.
- * Provides information about performance and current state.
- */
 public class OkasoStats {
 
     private long uptime;
@@ -20,8 +16,6 @@ public class OkasoStats {
     public OkasoStats() {
         this.lastCollectionTime = System.currentTimeMillis();
     }
-
-    // ============ Getters ============
 
     public long getUptime() {
         return uptime;

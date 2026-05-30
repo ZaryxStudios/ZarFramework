@@ -21,13 +21,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Centralized okaso command manager.
- * Provides registration, unregistration, enable/disable, and advanced command management
- * with alias indexing and event bus integration.
- */
 public final class CommandManager implements ManagedComponent {
 
+    // Registers and dispatches typed commands through the Bukkit command map.
     private static volatile CommandManager instance;
 
     private final JavaPlugin plugin;
@@ -51,23 +47,13 @@ public final class CommandManager implements ManagedComponent {
         this.initialized = false;
     }
 
-    /**
-     * Returns the singleton instance of the CommandManager.
-     * @return the current instance, or null if not yet constructed
-     */
     public static CommandManager getInstance() {
         return instance;
     }
 
-    /**
-     * Returns the logger used by this manager.
-     * @return the plugin logger
-     */
     public Logger getLogger() {
         return logger;
     }
-
-    // ---- ManagedComponent ----
 
     @Override
     public String getName() { return "command-manager"; }
@@ -108,20 +94,10 @@ public final class CommandManager implements ManagedComponent {
                 + " | Status: " + (isEnabled() ? "ACTIVE" : "INACTIVE");
     }
 
-    // ---- Registration ----
-
-    /**
-     * Register a command with the okaso and Bukkit's command map.
-     * @return true if registration succeeded, false if the name/alias conflicts
-     */
     public boolean register(Command command) {
         return register(command, null);
     }
 
-    /**
-     * Register a command with an optional description.
-     * @return true if registration succeeded
-     */
     public boolean register(Command command, String description) {
         if (command == null) {
             logger.warning("Cannot register null command");
@@ -137,7 +113,6 @@ public final class CommandManager implements ManagedComponent {
         String name = raw.trim().toLowerCase(Locale.ROOT);
         Set<String> aliases = normalizeAliases(command, name);
 
-        // Collision check
         if (registry.containsKey(name) || aliasIndex.containsKey(name)) {
             logger.warning("Command '" + name + "' is already registered");
             return false;
@@ -170,9 +145,6 @@ public final class CommandManager implements ManagedComponent {
         }
     }
 
-    /**
-     * Unregister a command by name or alias, removing it from Bukkit's command map.
-     */
     public boolean unregister(String name) {
         if (name == null) return false;
 
@@ -194,66 +166,36 @@ public final class CommandManager implements ManagedComponent {
         }
     }
 
-    // ---- Enable / Disable ----
-
-    /** Enables a command by name or alias. */
     public void enable(String name) { setEnabled(name, true); }
-    /** Disables a command by name or alias. */
+
     public void disable(String name) { setEnabled(name, false); }
-    /** Enables a command instance. */
+
     public void enable(Command command) { setEnabledFlag(command, true); }
-    /** Disables a command instance. */
+
     public void disable(Command command) { setEnabledFlag(command, false); }
 
-    // ---- Queries ----
-
-    /**
-     * Gets a registered command by name or alias.
-     * @param name the command name or alias
-     * @return the command, or null if not found
-     */
     public Command getCommand(String name) {
         String resolved = resolveCommandName(name);
         RegisteredCommand entry = resolved != null ? registry.get(resolved) : null;
         return entry != null ? entry.command : null;
     }
 
-    /**
-     * Checks whether a command is registered.
-     * @param name the command name or alias
-     * @return true if registered
-     */
     public boolean isRegistered(String name) {
         return resolveCommandName(name) != null;
     }
 
-    /**
-     * Checks whether a registered command is currently enabled.
-     * @param name the command name or alias
-     * @return true if the command exists and is enabled
-     */
     public boolean isCommandEnabled(String name) {
         String resolved = resolveCommandName(name);
         RegisteredCommand entry = resolved != null ? registry.get(resolved) : null;
         return entry != null && entry.enabled;
     }
 
-    /**
-     * Gets the description of a registered command.
-     * @param name the command name or alias
-     * @return the description, or null if not found
-     */
     public String getDescription(String name) {
         String resolved = resolveCommandName(name);
         RegisteredCommand entry = resolved != null ? registry.get(resolved) : null;
         return entry != null ? entry.description : null;
     }
 
-    /**
-     * Gets a human-readable info string for a command.
-     * @param name the command name or alias
-     * @return formatted info, or null if not found
-     */
     public String getCommandInfo(String name) {
         String resolved = resolveCommandName(name);
         if (resolved == null) return null;
@@ -265,10 +207,6 @@ public final class CommandManager implements ManagedComponent {
                 + " | Usage: " + entry.command.getUsage();
     }
 
-    /**
-     * Returns an unmodifiable collection of all registered commands.
-     * @return snapshot of all commands
-     */
     public Collection<Command> getAllCommands() {
         List<Command> snapshot = new ArrayList<>();
         for (RegisteredCommand entry : registry.values()) {
@@ -277,18 +215,12 @@ public final class CommandManager implements ManagedComponent {
         return Collections.unmodifiableList(snapshot);
     }
 
-    /**
-     * Returns an unmodifiable set of all registered command names.
-     * @return snapshot of all command names
-     */
     public Set<String> getAllCommandNames() {
         return Collections.unmodifiableSet(new LinkedHashSet<>(registry.keySet()));
     }
 
-    /** @return the total number of registered commands */
     public int getCommandCount() { return registry.size(); }
 
-    /** @return the number of registered commands that are currently enabled */
     public long getEnabledCommandCount() {
         long count = 0;
         for (RegisteredCommand entry : registry.values()) {
@@ -297,11 +229,6 @@ public final class CommandManager implements ManagedComponent {
         return count;
     }
 
-    /**
-     * Finds commands whose name or alias starts with the given prefix.
-     * @param prefix the prefix to match (case-insensitive)
-     * @return list of matching commands (may be empty)
-     */
     public List<Command> findCommandsByPrefix(String prefix) {
         LinkedHashSet<Command> result = new LinkedHashSet<>();
         if (prefix == null || prefix.isEmpty()) return new ArrayList<>(result);
@@ -321,35 +248,16 @@ public final class CommandManager implements ManagedComponent {
         return new ArrayList<>(result);
     }
 
-    // ---- Events ----
-
-    /** @return the event bus used for command-related events */
     public EventBus getEventBus() { return eventBus; }
 
-    /**
-     * Registers a listener for a specific okaso event type.
-     * @param type     the event class to listen for
-     * @param listener the listener to invoke when the event is published
-     * @param <E>      the event type
-     */
     public <E extends EventBus.FrameworkEvent> void addEventListener(Class<E> type, EventBus.EventListener<E> listener) {
         eventBus.subscribe(type, listener);
     }
 
-    /**
-     * Publishes a okaso event to all registered listeners.
-     * @param event the event to publish
-     */
     public void publishEvent(EventBus.FrameworkEvent event) {
         eventBus.publish(event);
     }
 
-    // ---- Internal helpers ----
-
-    /**
-     * Normalizes and deduplicates aliases from a command.
-     * Filters out null, empty, and self-referencing aliases.
-     */
     private Set<String> normalizeAliases(Command command, String primaryName) {
         Set<String> result = new LinkedHashSet<>();
         List<String> raw = command.getAliases();
@@ -363,11 +271,6 @@ public final class CommandManager implements ManagedComponent {
         return result;
     }
 
-    /**
-     * Resolves a command name or alias to its primary registry key.
-     * @param name the command name or alias
-     * @return the primary registry key, or null if not found
-     */
     private String resolveCommandName(String name) {
         if (name == null || name.trim().isEmpty()) return null;
         String key = name.trim().toLowerCase(Locale.ROOT);
@@ -375,7 +278,6 @@ public final class CommandManager implements ManagedComponent {
         return aliasIndex.get(key);
     }
 
-    /** Removes all alias entries that point to the given command name. */
     private void removeAliasesFor(String commandName) {
         Iterator<Map.Entry<String, String>> it = aliasIndex.entrySet().iterator();
         while (it.hasNext()) {
@@ -385,17 +287,12 @@ public final class CommandManager implements ManagedComponent {
         }
     }
 
-    /** Sets the enabled state of a command by name or alias. */
     private void setEnabled(String name, boolean value) {
         if (name == null) return;
         Command cmd = getCommand(name);
         if (cmd != null) setEnabledFlag(cmd, value);
     }
 
-    /**
-     * Sets the enabled state of a command instance, updating both the registry
-     * entry and the underlying {@link BaseCommand} if applicable.
-     */
     private void setEnabledFlag(Command command, boolean value) {
         if (command == null) return;
         String resolved = resolveCommandName(command.getName());
@@ -408,11 +305,6 @@ public final class CommandManager implements ManagedComponent {
         }
     }
 
-    /**
-     * Initializes the Bukkit CommandMap via reflection.
-     * @return the server's CommandMap
-     * @throws RuntimeException if the CommandMap cannot be obtained
-     */
     private static CommandMap initCommandMap() {
         try {
             Field field = Bukkit.getServer().getClass().getDeclaredField("commandMap");
@@ -423,9 +315,6 @@ public final class CommandManager implements ManagedComponent {
         }
     }
 
-    // ---- RegisteredCommand ----
-
-    /** Internal holder for a registered command and its metadata. */
     private static final class RegisteredCommand {
         final String name;
         final Command command;

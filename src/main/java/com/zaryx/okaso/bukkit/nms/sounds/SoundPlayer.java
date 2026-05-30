@@ -6,9 +6,6 @@ import org.bukkit.entity.Player;
 
 import com.zaryx.okaso.bukkit.OkasoPlugin;
 
-/**
- * Utility to play sounds with optional delay/repeat and category fallback.
- */
 public class SoundPlayer {
 
     private final NmsSound sound;
@@ -79,7 +76,7 @@ public class SoundPlayer {
     }
 
     public void play(Location location) {
-        // configure the sound and play at location
+
         sound.with(volume, pitch).category(category).delay(delay).play(location);
     }
 

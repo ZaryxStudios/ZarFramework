@@ -5,12 +5,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Central module manager for the okaso.
- * Responsible for registering, initializing, and disabling modules.
- */
 public class ModuleManager {
 
+    // Keeps module registration and lifecycle state in one place.
     private final Logger logger;
     private final Map<String, Module> modules;
     private final List<Module> loadOrder;
@@ -23,11 +20,6 @@ public class ModuleManager {
         this.initialized = false;
     }
 
-    /**
-     * Registers a module
-     * @param module module to register
-     * @return true if registration succeeded
-     */
     public boolean register(Module module) {
         if (module == null) {
             logger.warning("Attempted to register a null module");
@@ -46,21 +38,11 @@ public class ModuleManager {
         return true;
     }
 
-    /**
-     * Retrieves a registered module
-     * @param name module name
-     * @return the module or null if missing
-     */
+    // Returns a module by its registered name.
     public Module get(String name) {
         return modules.get(name);
     }
 
-    /**
-     * Retrieves a module with type casting
-     * @param name module name
-     * @param type expected type
-     * @return the cast module or null
-     */
     @SuppressWarnings("unchecked")
     public <T extends Module> T get(String name, Class<T> type) {
         Module module = modules.get(name);
@@ -70,18 +52,11 @@ public class ModuleManager {
         return null;
     }
 
-    /**
-     * Retrieves all registered modules
-     * @return collection of modules
-     */
     public Collection<Module> getAll() {
         return modules.values();
     }
 
-    /**
-     * Initializes all registered modules
-     * @return true if all modules initialized successfully
-     */
+    // Initializes modules in the same order they were registered.
     public boolean initializeAll() {
         if (initialized) {
             logger.warning("Modules have already been initialized");
@@ -112,13 +87,10 @@ public class ModuleManager {
         return success;
     }
 
-    /**
-     * Disables all modules in reverse order
-     */
+    // Disables modules in reverse order to respect dependencies.
     public void disableAll() {
         logger.info("Disabling modules...");
 
-        // Disable in reverse order
         for (int i = loadOrder.size() - 1; i >= 0; i--) {
             Module module = loadOrder.get(i);
             try {
@@ -135,27 +107,14 @@ public class ModuleManager {
         logger.info("All modules were disabled");
     }
 
-    /**
-     * Checks whether modules are initialized
-     * @return true if initialized
-     */
     public boolean isInitialized() {
         return initialized;
     }
 
-    /**
-     * Returns the number of registered modules
-     * @return module count
-     */
     public int size() {
         return modules.size();
     }
 
-    /**
-     * Registers all modules from a collection
-     * @param modules collection of modules to register
-     * @return number of modules successfully registered
-     */
     public int registerAll(Collection<Module> modules) {
         int count = 0;
         for (Module module : modules) {
@@ -166,29 +125,15 @@ public class ModuleManager {
         return count;
     }
 
-    /**
-     * Registers all modules from an array
-     * @param modules array of modules to register
-     * @return number of modules successfully registered
-     */
     public int registerAll(Module... modules) {
         return registerAll(Arrays.asList(modules));
     }
 
-    /**
-     * Checks if a module is registered
-     * @param name module name
-     * @return true if module is registered
-     */
+    // Checks whether a module name is already registered.
     public boolean isRegistered(String name) {
         return name != null && modules.containsKey(name);
     }
 
-    /**
-     * Unregisters a module
-     * @param name module name
-     * @return true if module was unregistered
-     */
     public boolean unregister(String name) {
         Module module = modules.remove(name);
         if (module != null) {
@@ -199,51 +144,33 @@ public class ModuleManager {
         return false;
     }
 
-    /**
-     * Gets the load order of modules
-     * @return list of modules in load order
-     */
+    // Returns the registration order used during startup and shutdown.
     public List<Module> getLoadOrder() {
         return Collections.unmodifiableList(loadOrder);
     }
 
-    /**
-     * Gets the number of enabled modules
-     * @return number of enabled modules
-     */
     public int getEnabledCount() {
         return (int) modules.values().stream()
                 .filter(Module::isEnabled)
                 .count();
     }
 
-    /**
-     * Gets the number of disabled modules
-     * @return number of disabled modules
-     */
     public int getDisabledCount() {
         return (int) modules.values().stream()
                 .filter(module -> !module.isEnabled())
                 .count();
     }
 
-    /**
-     * Gets a summary of module status
-     * @return status summary
-     */
     public String getStatusSummary() {
         return String.format("Modules: %d total, %d enabled, %d disabled", size(), getEnabledCount(), getDisabledCount());
     }
 
-    /**
-     * Validates all modules
-     * @return true if all modules are valid
-     */
+    // Validates basic module metadata before use.
     public boolean validateAll() {
         boolean allValid = true;
         for (Module module : modules.values()) {
             try {
-                // Basic validation - could be extended
+
                 if (module.getName() == null || module.getName().trim().isEmpty()) {
                     logger.warning("Module has no name");
                     allValid = false;
@@ -256,11 +183,7 @@ public class ModuleManager {
         return allValid;
     }
 
-    /**
-     * Enables a specific module
-     * @param name module name
-     * @return true if module was enabled
-     */
+    // Enables a single module by calling its initialize hook.
     public boolean enableModule(String name) {
         Module module = get(name);
         if (module != null && !module.isEnabled()) {
@@ -276,11 +199,7 @@ public class ModuleManager {
         return false;
     }
 
-    /**
-     * Disables a specific module
-     * @param name module name
-     * @return true if module was disabled
-     */
+    // Disables a single module by calling its shutdown hook.
     public boolean disableModule(String name) {
         Module module = get(name);
         if (module != null && module.isEnabled()) {

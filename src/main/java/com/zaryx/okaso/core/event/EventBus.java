@@ -5,10 +5,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Central event system for the okaso.
- * Allows components to communicate in a decoupled way.
- */
 public class EventBus {
 
     private final Logger logger;
@@ -19,11 +15,6 @@ public class EventBus {
         this.listeners = Collections.synchronizedMap(new HashMap<>());
     }
 
-    /**
-     * Registers a listener for an event type
-     * @param eventType event type to listen to
-     * @param listener listener that will handle the event
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void subscribe(Class<E> eventType, EventListener<E> listener) {
         if (eventType == null || listener == null) {
@@ -36,11 +27,6 @@ public class EventBus {
         logger.fine("Listener registered for event: " + eventType.getSimpleName());
     }
 
-    /**
-     * Unregisters a listener
-     * @param eventType event type
-     * @param listener listener to remove
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void unsubscribe(Class<E> eventType, EventListener<E> listener) {
         List<EventListener> eventListeners = listeners.get(eventType);
@@ -50,10 +36,6 @@ public class EventBus {
         }
     }
 
-    /**
-     * Publishes an event to all registered listeners
-     * @param event event to publish
-     */
     @SuppressWarnings("unchecked")
     public <E extends FrameworkEvent> void publish(E event) {
         if (event == null) {
@@ -73,33 +55,20 @@ public class EventBus {
         }
     }
 
-    /**
-     * Returns the number of registered listeners
-     * @return total listener count
-     */
     public int getListenerCount() {
         return listeners.values().stream().mapToInt(List::size).sum();
     }
 
-    /**
-     * Clears all listeners
-     */
     public void clear() {
         listeners.clear();
         logger.info("Event bus cleared");
     }
 
-    /**
-     * Interface for event listeners
-     */
     @FunctionalInterface
     public interface EventListener<E extends FrameworkEvent> {
         void onEvent(E event);
     }
 
-    /**
-     * Base class for all okaso events
-     */
     public static abstract class FrameworkEvent {
         private final long timestamp;
         private final String source;

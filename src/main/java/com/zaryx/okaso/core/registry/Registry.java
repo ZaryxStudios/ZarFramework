@@ -4,10 +4,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-/**
- * Generic registry for okaso components.
- * Allows registering, retrieving, and managing components of any type.
- */
 public class Registry<T> {
 
     private final Logger logger;
@@ -22,16 +18,10 @@ public class Registry<T> {
         this.metadata = new ConcurrentHashMap<>();
     }
 
-    /**
-     * Registers an entry
-     */
     public boolean register(String key, T value) {
         return register(key, value, null);
     }
 
-    /**
-     * Registers an entry with metadata
-     */
     public boolean register(String key, T value, String metadata) {
         if (key == null || value == null) {
             logger.warning("Cannot register null key or value in " + registryName);
@@ -51,16 +41,10 @@ public class Registry<T> {
         return true;
     }
 
-    /**
-     * Retrieves an entry
-     */
     public T get(String key) {
         return key != null ? entries.get(key) : null;
     }
 
-    /**
-     * Retrieves an entry with type casting
-     */
     @SuppressWarnings("unchecked")
     public <U extends T> U get(String key, Class<U> type) {
         T value = get(key);
@@ -70,23 +54,14 @@ public class Registry<T> {
         return null;
     }
 
-    /**
-     * Retrieves all values
-     */
     public Collection<T> getAll() {
         return Collections.unmodifiableCollection(entries.values());
     }
 
-    /**
-     * Retrieves all keys
-     */
     public Set<String> getAllKeys() {
         return Collections.unmodifiableSet(entries.keySet());
     }
 
-    /**
-     * Unregisters an entry
-     */
     public boolean unregister(String key) {
         boolean removed = entries.remove(key) != null;
         metadata.remove(key);
@@ -96,23 +71,14 @@ public class Registry<T> {
         return removed;
     }
 
-    /**
-     * Checks if an entry is registered
-     */
     public boolean isRegistered(String key) {
         return key != null && entries.containsKey(key);
     }
 
-    /**
-     * Returns the number of registered entries
-     */
     public int size() {
         return entries.size();
     }
 
-    /**
-     * Clears the registry
-     */
     public void clear() {
         int size = entries.size();
         entries.clear();
@@ -120,23 +86,14 @@ public class Registry<T> {
         logger.info("Registry " + registryName + " cleared: " + size + " entries removed");
     }
 
-    /**
-     * Returns metadata for an entry
-     */
     public String getMetadata(String key) {
         return key != null ? metadata.get(key) : null;
     }
 
-    /**
-     * Returns the registry name
-     */
     public String getRegistryName() {
         return registryName;
     }
 
-    /**
-     * Returns registry statistics
-     */
     public String getStats() {
         return registryName + " | Entries: " + entries.size() +
                " | With metadata: " + metadata.size();

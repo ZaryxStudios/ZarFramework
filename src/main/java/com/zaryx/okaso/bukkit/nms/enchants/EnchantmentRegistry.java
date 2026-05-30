@@ -8,11 +8,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/**
- * Version-aware enchantment resolution utilities.
- * Keeps a canonical view of enchantments while allowing old/new aliases to resolve
- * to the same logical enchantment across very different Bukkit/Mojang versions.
- */
 public final class EnchantmentRegistry {
 
     private EnchantmentRegistry() {}
@@ -30,7 +25,6 @@ public final class EnchantmentRegistry {
             }
         }
 
-        // Fallback: direct lookup after normalization
         return Enchantment.getByName(normalized);
     }
 
@@ -48,19 +42,16 @@ public final class EnchantmentRegistry {
         Set<String> aliases = new LinkedHashSet<String>();
         aliases.add(name);
 
-        // Damage/weapon enchants
         if (name.equals("SHARPNESS") || name.equals("DAMAGE_ALL")) aliases.addAll(Arrays.asList("DAMAGE_ALL", "SHARPNESS"));
         if (name.equals("SMITE") || name.equals("DAMAGE_UNDEAD")) aliases.addAll(Arrays.asList("DAMAGE_UNDEAD", "SMITE"));
         if (name.equals("BANE_OF_ARTHROPODS") || name.equals("DAMAGE_ARTHROPODS")) aliases.addAll(Arrays.asList("DAMAGE_ARTHROPODS", "BANE_OF_ARTHROPODS"));
 
-        // Protection enchants
         if (name.equals("PROTECTION") || name.equals("PROTECTION_ENVIRONMENTAL")) aliases.addAll(Arrays.asList("PROTECTION_ENVIRONMENTAL", "PROTECTION"));
         if (name.equals("FIRE_PROTECTION") || name.equals("PROTECTION_FIRE")) aliases.addAll(Arrays.asList("PROTECTION_FIRE", "FIRE_PROTECTION"));
         if (name.equals("FEATHER_FALLING") || name.equals("PROTECTION_FALL")) aliases.addAll(Arrays.asList("PROTECTION_FALL", "FEATHER_FALLING"));
         if (name.equals("BLAST_PROTECTION") || name.equals("PROTECTION_EXPLOSIONS")) aliases.addAll(Arrays.asList("PROTECTION_EXPLOSIONS", "BLAST_PROTECTION"));
         if (name.equals("PROJECTILE_PROTECTION") || name.equals("PROTECTION_PROJECTILE")) aliases.addAll(Arrays.asList("PROTECTION_PROJECTILE", "PROJECTILE_PROTECTION"));
 
-        // Bow / fishing / utility enchants
         if (name.equals("POWER") || name.equals("ARROW_DAMAGE")) aliases.addAll(Arrays.asList("ARROW_DAMAGE", "POWER"));
         if (name.equals("PUNCH") || name.equals("ARROW_KNOCKBACK")) aliases.addAll(Arrays.asList("ARROW_KNOCKBACK", "PUNCH"));
         if (name.equals("FLAME") || name.equals("ARROW_FIRE")) aliases.addAll(Arrays.asList("ARROW_FIRE", "FLAME"));
@@ -68,13 +59,11 @@ public final class EnchantmentRegistry {
         if (name.equals("LUCK_OF_THE_SEA") || name.equals("LUCK")) aliases.addAll(Arrays.asList("LUCK", "LUCK_OF_THE_SEA"));
         if (name.equals("LURE") || name.equals("LURE")) aliases.add("LURE");
 
-        // Tool enchants
         if (name.equals("EFFICIENCY") || name.equals("DIG_SPEED")) aliases.addAll(Arrays.asList("DIG_SPEED", "EFFICIENCY"));
         if (name.equals("UNBREAKING") || name.equals("DURABILITY")) aliases.addAll(Arrays.asList("DURABILITY", "UNBREAKING"));
         if (name.equals("FORTUNE") || name.equals("LOOT_BONUS_BLOCKS")) aliases.addAll(Arrays.asList("LOOT_BONUS_BLOCKS", "FORTUNE"));
         if (name.equals("LOOTING") || name.equals("LOOT_BONUS_MOBS")) aliases.addAll(Arrays.asList("LOOT_BONUS_MOBS", "LOOTING"));
 
-        // Special / newer enchants
         if (name.equals("MENDING")) aliases.add("MENDING");
         if (name.equals("VANISHING_CURSE") || name.equals("VANISHING")) aliases.addAll(Arrays.asList("VANISHING_CURSE", "VANISHING"));
         if (name.equals("BINDING_CURSE") || name.equals("BINDING")) aliases.addAll(Arrays.asList("BINDING_CURSE", "BINDING"));

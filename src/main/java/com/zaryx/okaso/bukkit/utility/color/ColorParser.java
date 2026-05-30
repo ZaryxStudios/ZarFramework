@@ -10,9 +10,6 @@ import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/**
- * Parses color tags, gradients, rainbows, and hex colors into legacy Minecraft color codes.
- */
 public final class ColorParser {
 
     private static final Logger LOGGER = Logger.getLogger(ColorParser.class.getName());

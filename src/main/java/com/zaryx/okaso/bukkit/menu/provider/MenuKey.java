@@ -2,10 +2,6 @@ package com.zaryx.okaso.bukkit.menu.provider;
 
 import java.util.Arrays;
 
-/**
- * Immutable key for menu provider cache lookups.
- * Wraps an array of parameters with proper equals/hashCode semantics.
- */
 public final class MenuKey {
     private final Object[] params;
     private final int hash;

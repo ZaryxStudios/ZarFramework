@@ -2,10 +2,6 @@ package com.zaryx.okaso.api;
 
 import java.util.Map;
 
-/**
- * Debug information for Okaso.
- * Provides details for troubleshooting and monitoring.
- */
 public class OkasoDebugInfo {
 
     private String okasoVersion;
@@ -17,12 +13,8 @@ public class OkasoDebugInfo {
     private Throwable lastError;
     private String lastErrorMessage;
 
-    // ============ Constructores ============
-
     public OkasoDebugInfo() {
     }
-
-    // ============ Getters & Setters ============
 
     public String getokasoVersion() {
         return okasoVersion;

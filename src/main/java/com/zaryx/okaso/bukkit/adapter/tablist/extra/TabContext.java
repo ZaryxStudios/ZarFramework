@@ -22,8 +22,6 @@ public class TabContext {
         return entries.get(getSlot(column, row));
     }
 
-    /* ================= SLOT ================= */
-
     public int getSlot(int column, int row) {
 
         if (column < 0 || column > 3) {
@@ -36,8 +34,6 @@ public class TabContext {
 
         return column * 20 + row;
     }
-
-    /* ================= UTIL ================= */
 
     public boolean contains(int column, int row) {
         return entries.containsKey(getSlot(column, row));

@@ -13,12 +13,23 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Unified cross-version sound manager (modified to use SoundManager volume multipliers).
- */
 public class NmsSound {
 
     private static final Logger LOGGER = Logger.getLogger(NmsSound.class.getName());
+
+    private static final java.util.Map<String, String> LEGACY_TO_MODERN = new java.util.HashMap<>();
+
+    static {
+        LEGACY_TO_MODERN.put("CLICK", "UI_BUTTON_CLICK");
+        LEGACY_TO_MODERN.put("ORB_PICKUP", "ENTITY_EXPERIENCE_ORB_PICKUP");
+        LEGACY_TO_MODERN.put("LEVEL_UP", "ENTITY_PLAYER_LEVELUP");
+        LEGACY_TO_MODERN.put("VILLAGER_NO", "ENTITY_VILLAGER_NO");
+        LEGACY_TO_MODERN.put("VILLAGER_YES", "ENTITY_VILLAGER_YES");
+        LEGACY_TO_MODERN.put("VILLAGER_HAGGLE", "ENTITY_VILLAGER_TRADE");
+        LEGACY_TO_MODERN.put("ANVIL_BREAK", "ENTITY_ITEM_BREAK");
+        LEGACY_TO_MODERN.put("ANVIL_USE", "BLOCK_ANVIL_USE");
+        LEGACY_TO_MODERN.put("FURNACE_FIRE_CRACKLE", "BLOCK_FURNACE_FIRE_CRACKLE");
+    }
 
     private final String soundName;
     private final Sound bukkitSound;
@@ -40,7 +51,6 @@ public class NmsSound {
         this.delay = 0;
     }
 
-    // Builder-style methods
     public NmsSound volume(float vol) {
         this.volume = clamp(vol, 0.0f, 2.0f);
         return this;
@@ -68,7 +78,6 @@ public class NmsSound {
         return copy;
     }
 
-    // Play methods - various signatures for flexibility
     public void play(Player player) {
         if (player == null || bukkitSound == null) return;
         schedulePlay(() -> executePlay(player, player.getLocation()));
@@ -119,7 +128,6 @@ public class NmsSound {
         }
     }
 
-    // Stop methods
     public void stop(Player player) {
         if (player == null || bukkitSound == null) return;
         try {
@@ -143,7 +151,6 @@ public class NmsSound {
         }
     }
 
-    // Getters
     public String getSoundName() { return soundName; }
     public Sound getBukkitSound() { return bukkitSound; }
     public float getVolume() { return volume; }
@@ -163,7 +170,12 @@ public class NmsSound {
         return resolveBukkitSound(name) != null;
     }
 
-    // Private helpers
+    public static boolean existsLegacyOrModern(String name) {
+        if (exists(name)) return true;
+        String modern = LEGACY_TO_MODERN.get(name.toUpperCase());
+        return modern != null && exists(modern);
+    }
+
     private void schedulePlay(Runnable task) {
         if (delay > 0) {
             Bukkit.getScheduler().runTaskLater(
@@ -208,9 +220,22 @@ public class NmsSound {
     private static Sound resolveBukkitSound(String name) {
         if (name == null || name.trim().isEmpty()) return fallbackSound();
         String upper = name.toUpperCase();
+
         try { return Sound.valueOf(upper); } catch (IllegalArgumentException ignored) {}
+
+        String modern = LEGACY_TO_MODERN.get(upper);
+        if (modern != null) {
+            try { return Sound.valueOf(modern); } catch (IllegalArgumentException ignored) {}
+        }
+
         String normalized = upper.replace("MINECRAFT:", "").replace('.', '_').replace('-', '_');
         try { return Sound.valueOf(normalized); } catch (IllegalArgumentException ignored) {}
+
+        String[] prefixes = {"ENTITY_", "BLOCK_", "UI_"};
+        for (String prefix : prefixes) {
+            try { return Sound.valueOf(prefix + normalized); } catch (IllegalArgumentException ignored) {}
+        }
+
         return fallbackSound();
     }
 

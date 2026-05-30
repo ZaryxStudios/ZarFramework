@@ -13,14 +13,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Example: Player Data plugin
- * Demonstrates:
- * - Okaso initialization
- * - Using cache for player data
- * - Event listeners
- * - Basic statistics
- */
 public class PlayerDataPlugin extends JavaPlugin implements Listener {
 
     private PluginOkasoAdapter okaso;
@@ -30,7 +22,7 @@ public class PlayerDataPlugin extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         try {
-            // Initialize okaso
+
             okaso = new PluginOkasoAdapter(this)
                     .productionMode()
                     .initialize();
@@ -41,11 +33,9 @@ public class PlayerDataPlugin extends JavaPlugin implements Listener {
                 return;
             }
 
-            // Get components
             cache = okaso.getCacheManager();
             playerDataMap = new HashMap<>();
 
-            // Register listener
             getServer().getPluginManager().registerEvents(this, this);
 
             getLogger().info("✓ PlayerDataPlugin initialized");
@@ -71,11 +61,10 @@ public class PlayerDataPlugin extends JavaPlugin implements Listener {
         Player player = event.getPlayer();
         UUID uuid = player.getUniqueId();
 
-        // Try loading from cache
         PlayerData data = cache.get("player_" + uuid, PlayerData.class);
 
         if (data == null) {
-            // Create a new entry
+
             data = new PlayerData(uuid, player.getName());
         }
 
@@ -99,9 +88,6 @@ public class PlayerDataPlugin extends JavaPlugin implements Listener {
         }
     }
 
-    /**
-     * Player data class
-     */
     public static class PlayerData {
         private UUID uuid;
         private String name;

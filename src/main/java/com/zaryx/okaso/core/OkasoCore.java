@@ -5,13 +5,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Legacy global okaso singleton.
- * Prefer the per-plugin {@link com.zaryx.okaso.api.OkasoAPI} instance instead.
- */
 @Deprecated
 public class OkasoCore {
 
+    // Legacy bootstrap container kept for older integrations.
     private static OkasoCore instance;
 
     private final Logger logger;
@@ -26,22 +23,16 @@ public class OkasoCore {
         this.running = false;
     }
 
-    /**
-     * Initializes the core okaso.
-     * @deprecated Use {@link com.zaryx.okaso.api.OkasoAPI} instead.
-     */
     @Deprecated
+    // Creates the singleton instance once.
     public static synchronized void initialize(Logger logger) {
         if (instance == null) {
             instance = new OkasoCore(logger);
         }
     }
 
-    /**
-     * Returns the singleton instance.
-     * @deprecated Use {@link com.zaryx.okaso.api.OkasoAPI} instead.
-     */
     @Deprecated
+    // Returns the singleton instance or fails fast if it was not initialized.
     public static OkasoCore getInstance() {
         if (instance == null) {
             throw new IllegalStateException("OkasoCore has not been initialized");
@@ -49,16 +40,10 @@ public class OkasoCore {
         return instance;
     }
 
-    /**
-     * Returns the ModuleManager
-     */
     public ModuleManager getModuleManager() {
         return moduleManager;
     }
 
-    /**
-     * Registers a component
-     */
     public <T> void registerComponent(String name, T component) {
         if (name == null || component == null) {
             logger.warning("Cannot register null component");
@@ -74,9 +59,7 @@ public class OkasoCore {
         logger.fine("Component registered: " + name);
     }
 
-    /**
-     * Returns a component
-     */
+    // Reads a typed component from the shared registry.
     @SuppressWarnings("unchecked")
     public <T> T getComponent(String name, Class<T> type) {
         Object component = components.get(name);
@@ -86,30 +69,20 @@ public class OkasoCore {
         return null;
     }
 
-    /**
-     * Returns a component without type validation
-     */
     public Object getComponent(String name) {
         return components.get(name);
     }
 
-    /**
-     * Checks whether a component exists
-     */
     public boolean hasComponent(String name) {
         return components.containsKey(name);
     }
 
-    /**
-     * Returns all registered components
-     */
+    // Exposes the registered components as a read-only view.
     public Collection<Object> getAllComponents() {
         return Collections.unmodifiableCollection(components.values());
     }
 
-    /**
-     * Starts the okaso
-     */
+    // Starts the core only after modules are ready.
     public synchronized boolean start() {
         if (running) {
             logger.warning("Okaso is already running");
@@ -134,9 +107,7 @@ public class OkasoCore {
         }
     }
 
-    /**
-     * Stops the okaso
-     */
+    // Stops modules first and then flips the running flag off.
     public synchronized void stop() {
         if (!running) {
             return;
@@ -152,32 +123,21 @@ public class OkasoCore {
         }
     }
 
-    /**
-     * Checks whether the okaso is running
-     */
     public boolean isRunning() {
         return running;
     }
 
-    /**
-     * Returns a short status summary
-     */
     public String getStatus() {
         return "OkasoCore | Status: " + (running ? "ACTIVE" : "INACTIVE") +
                " | Modules: " + moduleManager.size() +
                " | Components: " + components.size();
     }
 
-    /**
-     * Returns the okaso logger
-     */
     public Logger getLogger() {
         return logger;
     }
 
-    /**
-     * Clears everything and resets the core
-     */
+    // Resets the legacy core state for tests or manual restarts.
     public synchronized void reset() {
         stop();
         components.clear();

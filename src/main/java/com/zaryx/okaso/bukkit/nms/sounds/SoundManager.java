@@ -4,9 +4,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Simple category volume manager. Stores multipliers per sound category.
- */
 public final class SoundManager {
 
     private static final Map<String, Float> categoryVolumes = new HashMap<String, Float>();

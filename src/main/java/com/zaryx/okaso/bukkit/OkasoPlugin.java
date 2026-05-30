@@ -16,10 +16,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Main plugin class for Okaso.
- * Manages modular initialization of all okaso components.
- */
 @Getter
 public class OkasoPlugin extends JavaPlugin {
 
@@ -32,7 +28,6 @@ public class OkasoPlugin extends JavaPlugin {
     private ModuleManager moduleManager;
     private Logger frameworkLogger;
 
-    // Managers (modules)
     private CommandManager commandManager;
     private MenuManager menuManager;
     private MenuProviderRegistry providerRegistry;
@@ -54,17 +49,15 @@ public class OkasoPlugin extends JavaPlugin {
     @Override
     public void onEnable() {
         try {
-            // Initialize module system
+
             this.moduleManager = new ModuleManager(frameworkLogger);
 
-            // Register modules
             if (!this.registerModules()) {
                 frameworkLogger.severe("Failed to register critical modules. Plugin disabled.");
                 this.setEnabled(false);
                 return;
             }
 
-            // Initialize all modules
             if (!this.moduleManager.initializeAll()) {
                 frameworkLogger.severe("Module initialization failed. Plugin disabled.");
                 this.setEnabled(false);
@@ -97,17 +90,13 @@ public class OkasoPlugin extends JavaPlugin {
         }
     }
 
-    /**
-    * Registers all okaso modules
-    * @return true if critical modules were registered successfully
-     */
     private boolean registerModules() {
-        // Configuration module
+
         this.configManager = new ConfigManager();
         ModuleWrapper configModule = new ModuleWrapper("config", configManager) {
             @Override
             public void initialize() {
-                // ConfigManager instance created; perform any required startup here if needed
+
                 frameworkLogger.info("ConfigManager ready");
             }
 
@@ -118,17 +107,15 @@ public class OkasoPlugin extends JavaPlugin {
         };
         moduleManager.register(configModule);
 
-        // Serialization module
         this.serializationManager = new SerializationManager(GsonBuilder::setPrettyPrinting);
         ModuleWrapper serializationModule = new ModuleWrapper("serialization", serializationManager) {
             @Override
             public void initialize() {
-                // Serialization is typically initialized in the constructor
+
             }
         };
         moduleManager.register(serializationModule);
 
-        // Command module
         this.commandManager = new CommandManager(this, this.getName().toUpperCase());
         ModuleWrapper commandModule = new ModuleWrapper("command", commandManager) {
             @Override
@@ -143,7 +130,6 @@ public class OkasoPlugin extends JavaPlugin {
         };
         moduleManager.register(commandModule);
 
-        // Menu module
         this.menuManager = new MenuManager(this);
         ModuleWrapper menuModule = new ModuleWrapper("menu", menuManager) {
             @Override
@@ -158,7 +144,6 @@ public class OkasoPlugin extends JavaPlugin {
         };
         moduleManager.register(menuModule);
 
-        // Menu provider module
         this.providerRegistry = new MenuProviderRegistry(this);
         ModuleWrapper providerModule = new ModuleWrapper("provider", providerRegistry) {
             @Override
@@ -176,9 +161,6 @@ public class OkasoPlugin extends JavaPlugin {
         return true;
     }
 
-    /**
-     * Helper class for wrapping managers as modules
-     */
     private static abstract class ModuleWrapper implements Module {
         protected final String name;
         protected final Object manager;

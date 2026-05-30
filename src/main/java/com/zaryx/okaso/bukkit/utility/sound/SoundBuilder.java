@@ -9,9 +9,6 @@ import java.lang.reflect.Method;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Fluent sound utility with legacy-safe fallbacks.
- */
 public class SoundBuilder {
 
     private static final Logger LOGGER = Logger.getLogger(SoundBuilder.class.getName());

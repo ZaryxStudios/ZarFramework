@@ -7,26 +7,15 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A command argument that parses an enum constant by name (case-insensitive).
- *
- * @param <T> the enum type
- */
 public final class EnumCommandArgument<T extends Enum<T>> extends CommandArgument<T> {
 
     private final Class<T> enumClass;
 
-    /**
-     * Creates a required enum argument.
-     * @param name      the argument name
-     * @param enumClass the enum class to parse values from
-     */
     public EnumCommandArgument(String name, Class<T> enumClass) {
         super(name);
         this.enumClass = enumClass;
     }
 
-    /** @return the enum class used for parsing */
     public Class<T> getEnumClass() { return enumClass; }
 
     @Override

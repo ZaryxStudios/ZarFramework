@@ -10,8 +10,5 @@ import java.lang.annotation.Target;
 public @interface ConfigFile {
     String value();
 
-    /**
-     * When false (default), the config stays in-memory and is never written to the plugin data folder.
-     */
     boolean exposeToDisk() default false;
 }

@@ -21,10 +21,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Abstract base class for all okaso menus.
- * Provides lifecycle hooks, dirty-tracking, navigation, and item management.
- */
 public abstract class Menu implements InventoryHolder {
 
     private static final Logger LOGGER = Logger.getLogger(Menu.class.getName());
@@ -56,8 +52,6 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    // ---- Getters / Setters ----
-
     public String getTitle() { return this.title; }
     public int getRows() { return this.rows; }
     public MenuType getType() { return this.type; }
@@ -69,9 +63,6 @@ public abstract class Menu implements InventoryHolder {
     public Menu getBack() { return this.back; }
     public void setBack(Menu back) { this.back = back; }
 
-    /**
-     * Mark the entire menu as dirty (full re-render) and enqueue for update.
-     */
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
         if (dirty) {
@@ -82,9 +73,6 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    /**
-     * Internal: mark a single slot dirty (used by setItem) and enqueue.
-     */
     private void markSlotDirty(int slot) {
         this.dirty = true;
         this.dirtySlots.set(slot);
@@ -98,11 +86,6 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    // ---- Lifecycle ----
-
-    /**
-     * Open this menu for the given player, pushing the previous menu onto the back stack.
-     */
     public void open(Player player) {
         if (player == null) return;
 
@@ -110,7 +93,7 @@ public abstract class Menu implements InventoryHolder {
         boolean navigating = Boolean.TRUE.equals(context.getOrDefault(MenuContext.NAVIGATING, false));
 
         try {
-            // Push the currently open menu onto the back stack (if it's a Menu)
+
             if (player.getOpenInventory() != null
                     && player.getOpenInventory().getTopInventory() != null
                     && player.getOpenInventory().getTopInventory().getHolder() instanceof Menu) {
@@ -128,7 +111,6 @@ public abstract class Menu implements InventoryHolder {
             MenuManager.getInstance().register(this, player);
             player.openInventory(this.inventory);
 
-            // Ensure onOpen runs on the main thread
             Task.sync(() -> this.onOpen(player));
 
             this.afterOpen(player);
@@ -139,10 +121,6 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    /**
-     * Navigate back to the previous menu in the back stack.
-     * Closes the inventory if there is no previous menu.
-     */
     public void back(Player player) {
         if (player == null) return;
 
@@ -164,15 +142,11 @@ public abstract class Menu implements InventoryHolder {
         previous.open(player);
     }
 
-    /**
-     * Close this menu for the given player, running lifecycle hooks and unregistering.
-     */
     public void close(Player player) {
         if (player == null) return;
 
         this.beforeClose(player);
 
-        // Always run per-player close hooks on the main thread
         Task.sync(() -> {
             try { this.onClose(player); } catch (Exception e) {
                 LOGGER.log(Level.WARNING, "Exception in onClose for menu '" + this.title + "'", e);
@@ -182,14 +156,9 @@ public abstract class Menu implements InventoryHolder {
             }
         });
 
-        // Unregister this player from the menu; MenuManager will cleanup empty sessions
         MenuManager.getInstance().unregister(this, player);
     }
 
-    /**
-     * Render only the dirty slots to the inventory.
-     * Called by MenuManager's tick scheduler.
-     */
     public void update() {
         if (!this.dirty) return;
 
@@ -203,11 +172,6 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    // ---- Click handling ----
-
-    /**
-     * Handle an inventory click event. Delegates to the MenuItem at the clicked slot.
-     */
     public void handleClick(InventoryClickEvent event) {
         int slot = event.getRawSlot();
         if (slot < 0 || slot >= this.items.length) return;
@@ -223,8 +187,6 @@ public abstract class Menu implements InventoryHolder {
             LOGGER.log(Level.WARNING, "Exception handling click at slot " + slot + " in menu '" + this.title + "'", e);
         }
     }
-
-    // ---- Item management ----
 
     public void setItem(int slot, MenuItem item) {
         if (this.items == null) {
@@ -262,18 +224,12 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    /**
-     * Fill all slots with the given item.
-     */
     public void fill(MenuItem item) {
         for (int slot = 0; slot < this.items.length; slot++) {
             setItem(slot, item);
         }
     }
 
-    /**
-     * Fill a contiguous range of slots [fromSlot, toSlot] with the given item.
-     */
     public void fillRange(int fromSlot, int toSlot, MenuItem item) {
         int start = Math.max(0, Math.min(fromSlot, toSlot));
         int end = Math.min(this.items.length - 1, Math.max(fromSlot, toSlot));
@@ -282,16 +238,10 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    /**
-     * Clear all items (fill with null).
-     */
     public void clearItems() {
         fill(null);
     }
 
-    /**
-     * Fill the border (outer ring) of the menu with the given item.
-     */
     public void fillBorder(MenuItem item) {
         int width = 9;
         int size = this.rows * width;
@@ -309,16 +259,9 @@ public abstract class Menu implements InventoryHolder {
         }
     }
 
-    // ---- Context ----
-
-    /**
-     * Get the per-player context for this menu.
-     */
     public MenuContext context(Player player) {
         return MenuManager.getInstance().getContext(this, player);
     }
-
-    // ---- Lifecycle hooks ----
 
     protected void prepare(Player player) {}
     protected void beforeOpen(Player player) {}

@@ -9,9 +9,6 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Skull utilities with legacy-safe owner handling.
- */
 public final class SkullHandler {
 
     private static final Logger LOGGER = Logger.getLogger(SkullHandler.class.getName());
@@ -40,7 +37,7 @@ public final class SkullHandler {
     }
 
     public static ItemStack setOwnerByUuid(ItemStack skull, UUID uuid) {
-        // Legacy APIs only support owner name directly; keep no-op safe fallback.
+
         return skull;
     }
 

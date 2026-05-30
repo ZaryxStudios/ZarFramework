@@ -6,6 +6,7 @@ import java.lang.reflect.Type;
 
 public abstract class Storage<T> {
 
+    // Provides a cached layer in front of a concrete storage backend.
     protected final CachedStorage<T> cache;
 
     protected Storage(StorageContext context, Class<T> type) {

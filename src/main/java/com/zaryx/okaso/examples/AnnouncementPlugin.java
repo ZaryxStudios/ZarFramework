@@ -11,14 +11,6 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Example: Announcement plugin
- * Demonstrates:
- * - Custom configuration
- * - Custom events
- * - Commands
- * - Okaso statistics
- */
 public class AnnouncementPlugin extends JavaPlugin implements CommandExecutor {
 
     private PluginOkasoAdapter okaso;
@@ -28,14 +20,13 @@ public class AnnouncementPlugin extends JavaPlugin implements CommandExecutor {
     @Override
     public void onEnable() {
         try {
-            // Custom configuration
+
             OkasoConfig config = new OkasoConfig()
-                .setCacheTTL(1800000)        // 30 minutes
+                .setCacheTTL(1800000)
                     .setCacheMaxSize(500)
                     .setThreadPoolSize(2)
                     .setDebugMode(false);
 
-            // Initialize okaso
             okaso = new PluginOkasoAdapter(this)
                     .withConfig(config)
                     .initialize();
@@ -46,14 +37,11 @@ public class AnnouncementPlugin extends JavaPlugin implements CommandExecutor {
                 return;
             }
 
-            // Get EventBus
             eventBus = okaso.getEventBus();
             announcements = new ArrayList<>();
 
-            // Register command
             getCommand("announce").setExecutor(this);
 
-            // Start announcement task
             startAnnouncementTask();
 
             getLogger().info("✓ AnnouncementPlugin initialized");
@@ -106,7 +94,7 @@ public class AnnouncementPlugin extends JavaPlugin implements CommandExecutor {
                 getServer().broadcastMessage("§b[ANNOUNCEMENT] " + announcement);
                 announcements.remove(0);
             }
-        }, 0, 1200); // Every minute
+        }, 0, 1200);
     }
 
     private void showStats(CommandSender sender) {
@@ -121,9 +109,6 @@ public class AnnouncementPlugin extends JavaPlugin implements CommandExecutor {
         sender.sendMessage("§b--- ---");
     }
 
-    /**
-     * Custom announcement event
-     */
     public static class AnnouncementEvent extends EventBus.FrameworkEvent {
         private final String message;
 

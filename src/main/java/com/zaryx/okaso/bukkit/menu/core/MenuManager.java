@@ -10,15 +10,12 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Central manager for menu sessions, dirty-queue processing, and stale-session cleanup.
- * Uses a tick-based scheduler for efficient rendering and periodic garbage collection.
- */
 public class MenuManager {
 
+    // Tracks open menus, their viewers, and dirty state for batch updates.
     private static final Logger LOGGER = Logger.getLogger(MenuManager.class.getName());
     private static final int MAX_MENUS_PER_TICK = 10;
-    private static final long STALE_SESSION_INTERVAL = 20L * 60L * 5L; // 5 minutes in ticks
+    private static final long STALE_SESSION_INTERVAL = 20L * 60L * 5L;
 
     private static MenuManager instance;
     private final Map<Menu, MenuSession> sessions;
@@ -28,7 +25,6 @@ public class MenuManager {
     public MenuManager(OkasoPlugin plugin) {
         instance = this;
 
-        // Use concurrent structures to tolerate async access from handlers
         this.sessions = new java.util.concurrent.ConcurrentHashMap<>();
         this.playerMenus = new java.util.concurrent.ConcurrentHashMap<>();
         this.dirtyQueue = new java.util.concurrent.ConcurrentLinkedDeque<>();
@@ -63,7 +59,6 @@ public class MenuManager {
             Collections.newSetFromMap(new java.util.concurrent.ConcurrentHashMap<Menu, Boolean>())
         ).add(menu);
 
-        // Enqueue for initial render
         enqueueDirty(menu);
     }
 
@@ -92,9 +87,6 @@ public class MenuManager {
         return false;
     }
 
-    /**
-     * Mark a menu as needing an update and enqueue it for processing.
-     */
     public void enqueueDirty(Menu menu) {
         if (menu == null || !menu.isDirty()) return;
         if (!this.dirtyQueue.contains(menu)) {
@@ -143,7 +135,7 @@ public class MenuManager {
     }
 
     private void init(OkasoPlugin plugin) {
-        // High-frequency render tick: process up to MAX_MENUS_PER_TICK dirty menus per tick
+
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             int processed = 0;
             while (processed < MAX_MENUS_PER_TICK) {
@@ -162,7 +154,6 @@ public class MenuManager {
             }
         }, 1L, 1L);
 
-        // Periodic garbage collection: remove empty/stale sessions every 5 minutes
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             try {
                 List<Menu> orphans = new ArrayList<>();

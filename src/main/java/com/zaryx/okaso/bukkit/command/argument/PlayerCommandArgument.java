@@ -9,15 +9,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * A command argument that resolves an online player by name.
- */
 public final class PlayerCommandArgument extends CommandArgument<Player> {
 
-    /**
-     * Creates a required player argument.
-     * @param name the argument name
-     */
     public PlayerCommandArgument(String name) {
         super(name);
     }

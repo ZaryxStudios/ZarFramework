@@ -14,10 +14,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Registry for menu providers. Handles registration, lookup, and periodic cache cleanup.
- * Automatically clears all providers and caches when the owning plugin disables.
- */
 public class MenuProviderRegistry {
     private static MenuProviderRegistry instance;
     private final JavaPlugin plugin;
@@ -33,7 +29,6 @@ public class MenuProviderRegistry {
         this.registered = new CopyOnWriteArrayList<>();
         Bukkit.getPluginManager().registerEvents(new ProviderHandler(), plugin);
 
-        // Periodic cleanup: purge expired entries from all providers every 60 seconds
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, () -> {
             try {
                 for (MenuProvider p : providers.values()) {
@@ -53,9 +48,6 @@ public class MenuProviderRegistry {
         return instance;
     }
 
-    /**
-     * Register a provider. Throws if a provider with the same key already exists.
-     */
     public void registerProvider(String name, MenuProvider provider) {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Provider name must not be null or empty");
@@ -72,9 +64,6 @@ public class MenuProviderRegistry {
         logger.fine("Menu provider registered: " + key);
     }
 
-    /**
-     * Unregister a provider and clear its cache.
-     */
     public void unregisterProvider(String name) {
         if (name == null) return;
         String key = name.trim().toLowerCase();
@@ -103,9 +92,6 @@ public class MenuProviderRegistry {
         return providers.size();
     }
 
-    /**
-     * Clear all providers and their caches. Called on plugin disable.
-     */
     public void clear() {
         for (MenuProvider provider : providers.values()) {
             try {

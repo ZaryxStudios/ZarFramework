@@ -8,6 +8,7 @@ import javax.crypto.spec.SecretKeySpec;
 
 public class HashingService {
 
+    // Provides common hash functions and HMAC for passwords, tokens, and data integrity.
     public String md5(String input) {
         return digest("MD5", input);
     }

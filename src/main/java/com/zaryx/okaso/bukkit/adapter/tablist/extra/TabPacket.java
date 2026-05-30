@@ -12,10 +12,6 @@ public final class TabPacket {
 
     private TabPacket() {}
 
-    /* ====================================================== */
-    /* ===================== FLAGS ========================== */
-    /* ====================================================== */
-
     private static final boolean MODERN;
     private static final Map<String, Class<?>> NMS_CACHE = new HashMap<>();
     private static final NmsService NMS = new NmsService();
@@ -26,10 +22,6 @@ public final class TabPacket {
         );
     }
 
-    /* ====================================================== */
-    /* ===================== PUBLIC API ===================== */
-    /* ====================================================== */
-
     public static void add(Player viewer, int slot, TabEntry entry) {
         if (MODERN) {
             send(viewer, createModernAdd(slot, entry));
@@ -38,7 +30,6 @@ public final class TabPacket {
         }
     }
 
-    /** UPDATE TEXT */
     public static void updateText(Player viewer, int slot, String text) {
         if (!MODERN) {
             send(viewer, createLegacy("UPDATE_DISPLAY_NAME", slot));
@@ -49,14 +40,12 @@ public final class TabPacket {
         }
     }
 
-    /** UPDATE PING */
     public static void updatePing(Player viewer, int slot, int ping) {
         if (!MODERN) {
             send(viewer, createLegacy("UPDATE_LATENCY", slot));
         }
     }
 
-    /** REMOVE SLOT */
     public static void remove(Player viewer, int slot) {
         if (MODERN) {
             send(viewer, createModernRemove(slot));
@@ -65,7 +54,6 @@ public final class TabPacket {
         }
     }
 
-    /** HEADER / FOOTER */
     public static void headerFooter(Player player, List<String> header, List<String> footer) {
         try {
             String h = join(header);
@@ -97,10 +85,6 @@ public final class TabPacket {
             throw new RuntimeException("Tab Header/Footer failed", e);
         }
     }
-
-    /* ====================================================== */
-    /* =================== MODERN =========================== */
-    /* ====================================================== */
 
     private static Object createModernAdd(int slot, TabEntry entry) {
 
@@ -141,10 +125,6 @@ public final class TabPacket {
         );
     }
 
-    /* ====================================================== */
-    /* =================== LEGACY =========================== */
-    /* ====================================================== */
-
     private static Object createLegacy(String action, int slot) {
 
         Class<?> packetClass = nms("PacketPlayOutPlayerInfo");
@@ -166,10 +146,6 @@ public final class TabPacket {
                 NMS.resolveLegacy("PacketPlayOutPlayerInfo$PlayerInfoData"), profile, 0, Reflection.getEnum("EnumGamemode", "SURVIVAL"), chat(" ")
         );
     }
-
-    /* ====================================================== */
-    /* =================== HELPERS ========================== */
-    /* ====================================================== */
 
     private static GameProfile profileOf(int slot, TabEntry entry) {
 
@@ -196,7 +172,6 @@ public final class TabPacket {
                 return Reflection.invokeStatic(component, "literal", text);
             }
 
-            // ===== LEGACY (1.8–1.16) =====
             Class<?> ichat = NMS.resolveLegacy("IChatBaseComponent");
             return Reflection.invokeStatic(
                     ichat, "a", "{\"text\":\"" + text.replace("\"", "") + "\"}"

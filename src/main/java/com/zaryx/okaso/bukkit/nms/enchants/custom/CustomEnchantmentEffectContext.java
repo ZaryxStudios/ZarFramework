@@ -16,9 +16,6 @@ import java.util.Locale;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Holds mutable effect state for a custom enchantment's active application.
- */
 public class CustomEnchantmentEffectContext {
 
     private static final Logger LOGGER = Logger.getLogger(CustomEnchantmentEffectContext.class.getName());

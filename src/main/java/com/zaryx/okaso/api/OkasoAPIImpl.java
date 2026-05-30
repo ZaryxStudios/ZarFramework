@@ -16,12 +16,9 @@ import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * OkasoAPI implementation.
- * Provides a unified interface to access okaso components.
- */
 public class OkasoAPIImpl implements OkasoAPI {
 
+    // Central entry point that wires together all Okaso services for a plugin.
     private final Logger logger;
     private final String ownerName;
     private final OkasoConfig config;
@@ -43,8 +40,6 @@ public class OkasoAPIImpl implements OkasoAPI {
     private MessageService messages;
     private OkasoStats stats;
 
-    // ============ Constructor ============
-
     public OkasoAPIImpl(Logger logger, Object owner) {
         this(logger, owner, new OkasoConfig());
     }
@@ -65,8 +60,6 @@ public class OkasoAPIImpl implements OkasoAPI {
             logger.info("Debug mode enabled: " + config);
         }
     }
-
-    // ============ Lifecycle ============
 
     @Override
     public synchronized boolean initialize() {
@@ -110,7 +103,6 @@ public class OkasoAPIImpl implements OkasoAPI {
                 messages = new MessageService();
             }
 
-            // Register core components
             components.putIfAbsent("moduleManager", moduleManager);
             components.putIfAbsent("eventBus", eventBus);
             components.putIfAbsent("cacheManager", cacheManager);
@@ -148,7 +140,6 @@ public class OkasoAPIImpl implements OkasoAPI {
             startTime = System.currentTimeMillis();
             logger.info("Starting Okaso...");
 
-            // Initialize all modules
             if (!moduleManager.initializeAll()) {
                 throw new RuntimeException("Module initialization failed");
             }
@@ -173,12 +164,10 @@ public class OkasoAPIImpl implements OkasoAPI {
         try {
             logger.info("Stopping Okaso...");
 
-            // Disable modules without removing registration so restart can preserve state
             if (moduleManager != null) {
                 moduleManager.disableAll();
             }
 
-            // Shutdown executor service
             if (executorService != null && !executorService.isShutdown()) {
                 executorService.shutdown();
                 if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
@@ -187,7 +176,6 @@ public class OkasoAPIImpl implements OkasoAPI {
             }
             executorService = null;
 
-            // Clear cache only
             if (cacheManager != null) {
                 cacheManager.clear();
             }
@@ -214,8 +202,6 @@ public class OkasoAPIImpl implements OkasoAPI {
     public Logger getLogger() {
         return logger;
     }
-
-    // ============ Component Access ============
 
     @Override
     public ModuleManager getModuleManager() {
@@ -404,8 +390,6 @@ public class OkasoAPIImpl implements OkasoAPI {
         try {
             logger.info("Auto-discovering modules in package: " + packageName);
 
-            // This is a simplified implementation - in a real okaso, // you would use reflection to scan the package for Module implementations
-            // For now, we'll just log the intent and return true
             logger.info("Module auto-discovery for " + packageName + " (simplified implementation)");
             return true;
         } catch (Exception e) {
@@ -442,7 +426,6 @@ public class OkasoAPIImpl implements OkasoAPI {
     public <T> void registerComponent(T component, String metadata) {
         registerComponent(null, component, metadata);
     }
-    // ============ Utilities ============
 
     @Override
     public ExecutorService getExecutorService() {
@@ -466,7 +449,7 @@ public class OkasoAPIImpl implements OkasoAPI {
     @Override
     public OkasoDebugInfo getDebugInfo() {
         OkasoDebugInfo info = new OkasoDebugInfo();
-        info.setokasoVersion("2.0.0");
+        info.setokasoVersion("26.1");
         info.setStartTime(startTime);
         info.setInitializationTime(System.currentTimeMillis() - initStartTime);
         info.setState(state.toString());
@@ -542,10 +525,8 @@ public class OkasoAPIImpl implements OkasoAPI {
 
     @Override
     public String getVersion() {
-        return "2.0.0";
+        return "26.1";
     }
-
-    // ============ Private Methods ============
 
     private void updateStats() {
         stats.setUptime(System.currentTimeMillis() - startTime);

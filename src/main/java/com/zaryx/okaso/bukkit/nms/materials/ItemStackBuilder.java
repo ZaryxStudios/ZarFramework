@@ -19,9 +19,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * ItemStack builder with reflection guards for modern-only features.
- */
 public class ItemStackBuilder {
 
     private static final Logger LOGGER = Logger.getLogger(ItemStackBuilder.class.getName());
@@ -140,7 +137,6 @@ public class ItemStackBuilder {
             stack.setItemMeta(meta);
         }
 
-        // Apply safe enchantments first, then unsafe ones using the compatibility API
         if (!enchantments.isEmpty()) {
             stack = EnchantmentsAPI.applySafely(stack, enchantments);
         }
@@ -179,9 +175,6 @@ public class ItemStackBuilder {
         }
     }
 
-    /**
-     * Applies custom model data via reflection with silent fallback.
-     */
     private static void applyCustomModelData(ItemMeta meta, int value) {
         try {
             Method setCustomModelData = meta.getClass().getMethod("setCustomModelData", Integer.class);

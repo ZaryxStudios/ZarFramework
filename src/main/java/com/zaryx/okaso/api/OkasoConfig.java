@@ -1,48 +1,29 @@
 package com.zaryx.okaso.api;
 
-/**
- * Okaso internal runtime configuration.
- * Defines runtime parameters and optimization presets (no public YAML file).
- * Intended to be provided by code when creating OkasoAPI.
- */
 public class OkasoConfig {
 
-    // ============ Cache Config ============
-    private long cacheTTL = 3600000; // 1 hora
+    private long cacheTTL = 3600000;
     private int cacheMaxSize = 1000;
 
-    // ============ Async Config ============
     private int threadPoolSize = 4;
     private boolean asyncEventsEnabled = true;
 
-    // ============ Logging Config ============
     private boolean debugMode = false;
     private boolean detailedLogging = false;
 
-    // ============ Module Config ============
     private boolean lazyModuleLoading = true;
     private boolean strictModuleValidation = false;
 
-    // ============ Performance Config ============
     private boolean enableMetrics = true;
     private boolean enableCacheCompression = false;
-    private int metricsCollectionIntervalMs = 60000; // 1 minuto
+    private int metricsCollectionIntervalMs = 60000;
 
-    // ============ HTTP Config ============
     private int requestTimeoutMs = 10000;
     private int connectTimeoutMs = 5000;
 
-    // ============ Constructores ============
-
-    /**
-     * Default constructor with sane defaults
-     */
     public OkasoConfig() {
     }
 
-    /**
-     * Copy constructor
-     */
     public OkasoConfig(OkasoConfig other) {
         this.cacheTTL = other.cacheTTL;
         this.cacheMaxSize = other.cacheMaxSize;
@@ -58,8 +39,6 @@ public class OkasoConfig {
         this.requestTimeoutMs = other.requestTimeoutMs;
         this.connectTimeoutMs = other.connectTimeoutMs;
     }
-
-    // ============ Getters & Setters ============
 
     public long getCacheTTL() {
         return cacheTTL;
@@ -178,28 +157,20 @@ public class OkasoConfig {
         return this;
     }
 
-    // ============ Presets ============
-
-    /**
-     * Preset optimized for development environments
-     */
     public static OkasoConfig development() {
         return new OkasoConfig()
                 .setDebugMode(true)
                 .setDetailedLogging(true)
-                .setCacheTTL(300000) // 5 minutos
+                .setCacheTTL(300000)
                 .setCacheMaxSize(100)
                 .setThreadPoolSize(2);
     }
 
-    /**
-     * Preset optimized for production environments
-     */
     public static OkasoConfig production() {
         return new OkasoConfig()
                 .setDebugMode(false)
                 .setDetailedLogging(false)
-                .setCacheTTL(3600000) // 1 hora
+                .setCacheTTL(3600000)
                 .setCacheMaxSize(5000)
                 .setThreadPoolSize(8)
                 .setEnableMetrics(true)
@@ -207,14 +178,11 @@ public class OkasoConfig {
                 .setConnectTimeoutMs(5000);
     }
 
-    /**
-     * Preset for low-performance servers
-     */
     public static OkasoConfig lowPerformance() {
         return new OkasoConfig()
                 .setDebugMode(false)
                 .setDetailedLogging(false)
-                .setCacheTTL(600000) // 10 minutos
+                .setCacheTTL(600000)
                 .setCacheMaxSize(256)
                 .setThreadPoolSize(1)
                 .setAsyncEventsEnabled(false)
@@ -223,14 +191,11 @@ public class OkasoConfig {
                 .setConnectTimeoutMs(3000);
     }
 
-    /**
-     * Preset for high-performance servers
-     */
     public static OkasoConfig highPerformance() {
         return new OkasoConfig()
                 .setDebugMode(false)
                 .setDetailedLogging(false)
-                .setCacheTTL(7200000) // 2 horas
+                .setCacheTTL(7200000)
                 .setCacheMaxSize(10000)
                 .setThreadPoolSize(16)
                 .setAsyncEventsEnabled(true)
@@ -259,4 +224,3 @@ public class OkasoConfig {
                 '}';
     }
 }
-

@@ -19,43 +19,27 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Data conversion utilities (ItemStack serialization, etc).
- * For text coloring, use Text utility.
- */
 public final class Convert {
 
     private static final Logger LOGGER = Logger.getLogger(Convert.class.getName());
 
     private Convert() {}
 
-    /**
-     * @deprecated Use Text.text() instead for text coloring and placeholders
-     */
     @Deprecated
     public static String text(String text) {
         return Text.text(text);
     }
 
-    /**
-     * @deprecated Use Text.text() instead for text coloring and placeholders
-     */
     @Deprecated
     public static List<String> text(List<String> t) {
         return Text.text(t);
     }
 
-    /**
-     * @deprecated Use Text.text(String, PlaceholderContext) instead
-     */
     @Deprecated
     public static String text(String t, PlaceholderContext context) {
         return Text.text(t, context);
     }
 
-    /**
-     * @deprecated Use Text.text(List, PlaceholderContext) instead
-     */
     @Deprecated
     public static List<String> text(List<String> t, PlaceholderContext context) {
         return Text.text(t, context);
@@ -65,7 +49,7 @@ public final class Convert {
         if(items.length == 0) {
             return "";
         }
-        // Try native Bukkit object stream first (may not exist on very old/new platforms)
+
         try {
             Class<?> bosClass = Class.forName("org.bukkit.util.io.BukkitObjectOutputStream");
             try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
@@ -80,13 +64,12 @@ public final class Convert {
                     writeObject.invoke(bos, item);
                 }
 
-                // close if possible
                 try { bosClass.getMethod("close").invoke(bos); } catch (Throwable t) { LOGGER.log(Level.FINE, "Failed to close BukkitObjectOutputStream", t); }
 
                 return Base64Coder.encodeLines(outputStream.toByteArray());
             }
         } catch (ClassNotFoundException cnf) {
-            // Fallback: use ConfigurationSerializable-based JSON
+
             try {
                 com.google.gson.Gson gson = new Gson();
                 List<Map<String, Object>> serialized = new ArrayList<>();
@@ -113,7 +96,6 @@ public final class Convert {
         }
         byte[] raw = Base64Coder.decodeLines(data);
 
-        // Try native Bukkit object stream first
         try {
             Class<?> bisClass = Class.forName("org.bukkit.util.io.BukkitObjectInputStream");
             try (ByteArrayInputStream inputStream = new ByteArrayInputStream(raw)) {
@@ -133,7 +115,7 @@ public final class Convert {
                 return items;
             }
         } catch (ClassNotFoundException cnf) {
-            // Fallback: JSON via ConfigurationSerializable
+
             try {
                 String json = new String(raw, StandardCharsets.UTF_8);
                 Gson gson = new Gson();

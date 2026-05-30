@@ -5,20 +5,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Logger;
 
-/**
- * CacheManager: single authoritative cache implementation.
- * Merges improvements from the previous V2 implementation while
- * keeping the original constructor signature for compatibility.
- */
 public class CacheManager {
 
+    // Stores cached values together with TTL and stats metadata.
     private final Map<String, CacheEntry<?>> cache;
     private static final Logger logger = Logger.getLogger(CacheManager.class.getName());
     private final long defaultTTL;
     private final int maxSize;
     private final boolean compressionEnabled;
 
-    // Metrics
     private final AtomicLong hits;
     private final AtomicLong misses;
     private final AtomicLong puts;
@@ -36,17 +31,15 @@ public class CacheManager {
         this.evictions = new AtomicLong(0);
     }
 
-    // Backwards-compatible constructor
     public CacheManager(long defaultTTLMillis, int maxSize) {
         this(defaultTTLMillis, maxSize, false);
     }
-
-    // ============ Cache Operations ============
 
     public <V> void put(String key, V value) {
         put(key, value, defaultTTL);
     }
 
+    // Inserts a value and evicts old entries when the cache is full.
     public <V> void put(String key, V value, long ttlMillis) {
         if (key == null || value == null) {
             logger.warning("Cannot cache null key or value");
@@ -61,6 +54,7 @@ public class CacheManager {
         puts.incrementAndGet();
     }
 
+    // Reads a typed value and updates hit/miss counters.
     @SuppressWarnings("unchecked")
     public <V> V get(String key, Class<V> type) {
         if (key == null) return null;
@@ -83,6 +77,7 @@ public class CacheManager {
         return null;
     }
 
+    // Reads a cached value without an explicit type check.
     @SuppressWarnings("unchecked")
     public <V> V get(String key) {
         if (key == null) return null;
@@ -116,6 +111,7 @@ public class CacheManager {
         cache.remove(key);
     }
 
+    // Clears the whole cache and resets the current entries only.
     public void clear() {
         cache.clear();
         logger.info("Cache cleared");
@@ -125,6 +121,7 @@ public class CacheManager {
         return cache.size();
     }
 
+    // Removes expired entries and returns the count.
     public int cleanup() {
         int removed = 0;
         Iterator<String> iterator = cache.keySet().iterator();
@@ -139,6 +136,7 @@ public class CacheManager {
         return removed;
     }
 
+    // Evicts the oldest entry when the cache reaches capacity.
     private void evictOldest() {
         if (cache.isEmpty()) return;
 
@@ -157,8 +155,6 @@ public class CacheManager {
             evictions.incrementAndGet();
         }
     }
-
-    // ============ Metrics ============
 
     public long getHits() { return hits.get(); }
     public long getMisses() { return misses.get(); }

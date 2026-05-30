@@ -15,10 +15,6 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Text helpers that remain compatible with legacy and modern server versions.
- * Includes color parsing, placeholder resolution, and messaging utilities.
- */
 public final class Text {
 
     private static final Logger LOGGER = Logger.getLogger(Text.class.getName());
@@ -120,7 +116,7 @@ public final class Text {
         String colored = colorize(message);
         try {
             Object spigot = player.spigot();
-            // Try (ChatMessageType, BaseComponent...)
+
             try {
                 Method m = spigot.getClass().getMethod("sendMessage", ChatMessageType.class, net.md_5.bungee.api.chat.BaseComponent[].class);
                 m.invoke(spigot, ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(colored));
@@ -129,7 +125,6 @@ public final class Text {
                 LOGGER.log(Level.FINE, "Spigot action bar signature with ChatMessageType was not available.", e);
             }
 
-            // Try varargs sendMessage(BaseComponent...)
             try {
                 Method m2 = spigot.getClass().getMethod("sendMessage", net.md_5.bungee.api.chat.BaseComponent[].class);
                 m2.invoke(spigot, new Object[]{TextComponent.fromLegacyText(colored)});
